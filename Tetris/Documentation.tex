@@ -1,0 +1,270 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{margin=1in}
+\title{Tetris program Documentation}
+\author{Wholemew}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\section{tetris.h}
+\subsection{Function: \texttt{parceInput}}
+\begin{itemize}
+    \item \textbf{Description:} Parses user input and returns the corresponding action.
+\end{itemize}
+
+\section{tetrisGUI.h}
+\subsection{Function: \texttt{StartingScreen}}
+\begin{itemize}
+    \item \textbf{Description:} Draws the starting screen of the game.
+\end{itemize}
+
+\subsection{Function: \texttt{UpdateGameScreen}}
+\begin{itemize}
+    \item \textbf{Description:} Draws the in-game screen.
+\end{itemize}
+
+\subsection{Function: \texttt{EndGameScreen}}
+\begin{itemize}
+    \item \textbf{Description:} Draws the endgame screen.
+\end{itemize}
+
+\subsection{Function: \texttt{DrawNext}}
+\begin{itemize}
+    \item \textbf{Description:} Draws the next piece in the designated field.
+\end{itemize}
+
+\subsection{Function: \texttt{DrawLine}}
+\begin{itemize}
+    \item \textbf{Description:} Draws a line shape.
+\end{itemize}
+
+\subsection{Function: \texttt{DrawLA}}
+\begin{itemize}
+    \item \textbf{Description:} Draws a left angle shape.
+\end{itemize}
+
+\subsection{Function: \texttt{DrawRA}}
+\begin{itemize}
+    \item \textbf{Description:} Draws a right angle shape.
+\end{itemize}
+
+\subsection{Function: \texttt{DrawLZ}}
+\begin{itemize}
+    \item \textbf{Description:} Draws a left zigzag shape.
+\end{itemize}
+
+\subsection{Function: \texttt{DrawRZ}}
+\begin{itemize}
+    \item \textbf{Description:} Draws a right zigzag shape.
+\end{itemize}
+
+\subsection{Function: \texttt{DrawSquare}}
+\begin{itemize}
+    \item \textbf{Description:} Draws a square shape.
+\end{itemize}
+
+\subsection{Function: \texttt{DrawT}}
+\begin{itemize}
+    \item \textbf{Description:} Draws a T shape.
+\end{itemize}
+
+\section{library.h}
+\subsection{Macros: \texttt{WID}}
+\begin{itemize}
+    \item \textbf{Description:} Width of playing field.
+\end{itemize}
+
+\subsection{Macros: \texttt{HEI}}
+\begin{itemize}
+    \item \textbf{Description:} Height of playing field.
+\end{itemize}
+
+\subsection{Macros: \texttt{MAXU}}
+\begin{itemize}
+    \item \textbf{Description:} Maximum value of unsigned.
+\end{itemize}
+
+\subsection{Macros: \texttt{EMP}}
+\begin{itemize}
+    \item \textbf{Description:} Code of empty space in the field.
+\end{itemize}
+
+\subsection{Macros: \texttt{FIL}}
+\begin{itemize}
+    \item \textbf{Description:} Code of filled space in the field.
+\end{itemize}
+
+\subsection{Enum: \texttt{UserAction\_t}}
+\begin{itemize}
+    \item \textbf{Description:} Types of user actions that may happen in the game.
+\end{itemize}
+
+\subsection{Enum: \texttt{Figure\_t}}
+\begin{itemize}
+    \item \textbf{Description:} Types of figures that may be generated in the game.
+\end{itemize}
+
+\subsection{Struct: \texttt{Falling\_t}}
+\begin{itemize}
+    \item \textbf{Description:} Description of falling figure.
+\end{itemize}
+
+\subsection{Struct: \texttt{GameInfo\_t}}
+\begin{itemize}
+    \item \textbf{Description:} General state of the current game.
+\end{itemize}
+
+\subsection{Static: \texttt{tetris}}
+\begin{itemize}
+    \item \textbf{Description:} Static structure with current game state in library.h.
+\end{itemize}
+
+\subsection{Static: \texttt{piece}}
+\begin{itemize}
+    \item \textbf{Description:} Static structure with the description of falling figure in library.h.
+\end{itemize}
+
+\subsection{Function: \texttt{Init}}
+\begin{itemize}
+    \item \textbf{Description:} Initiates the game field and sets up the game at the starting screen.
+\end{itemize}
+
+\subsection{Function: \texttt{Destroy}}
+\begin{itemize}
+    \item \textbf{Description:} Frees memory allocated in the static structure.
+\end{itemize}
+
+\subsection{Function: \texttt{StartGame}}
+\begin{itemize}
+    \item \textbf{Description:} Starts a new game.
+\end{itemize}
+
+\subsection{Function: \texttt{userInput}}
+\begin{itemize}
+    \item \textbf{Description:} Reads user input and handles game consequences.
+\end{itemize}
+
+\subsection{Function: \texttt{updateCurrentState}}
+\begin{itemize}
+    \item \textbf{Description:} Returns the current static game info structure for GUI.
+\end{itemize}
+
+\subsection{Function: \texttt{getPiece}}
+\begin{itemize}
+    \item \textbf{Description:} Returns the current falling piece for testing.
+\end{itemize}
+
+\subsection{Function: \texttt{uploadNewState}}
+\begin{itemize}
+    \item \textbf{Description:} Uploads a new game state and falling figure into internal static variables.
+\end{itemize}
+
+\subsection{Function: \texttt{PauseResume}}
+\begin{itemize}
+    \item \textbf{Description:} Pauses or resumes the game.
+\end{itemize}
+
+\subsection{Function: \texttt{EndGame}}
+\begin{itemize}
+    \item \textbf{Description:} Ends the game and updates the high score.
+\end{itemize}
+
+\subsection{Function: \texttt{ShiftLeft}}
+\begin{itemize}
+    \item \textbf{Description:} Adjusts function to shift the piece to the left.
+\end{itemize}
+
+\subsection{Function: \texttt{ShiftRight}}
+\begin{itemize}
+    \item \textbf{Description:} Adjusts function to shift the piece to the right.
+\end{itemize}
+
+\subsection{Function: \texttt{Rotate}}
+\begin{itemize}
+    \item \textbf{Description:} Adjusts function to rotate the piece.
+\end{itemize}
+
+\subsection{Function: \texttt{PutPiece}}
+\begin{itemize}
+    \item \textbf{Description:} Adjusts function to draw the piece into the field.
+\end{itemize}
+
+\subsection{Function: \texttt{CleanPiece}}
+\begin{itemize}
+    \item \textbf{Description:} Adjusts function to erase the piece from the field.
+\end{itemize}
+
+\subsection{Function: \texttt{Drop}}
+\begin{itemize}
+    \item \textbf{Description:} Drops the piece down until it connects.
+\end{itemize}
+
+\subsection{Function: \texttt{MoveDown}}
+\begin{itemize}
+    \item \textbf{Description:} Moves the piece one step down.
+\end{itemize}
+
+\subsection{Function: \texttt{GenerateNext}}
+\begin{itemize}
+    \item \textbf{Description:} Generates the type of the next piece.
+\end{itemize}
+
+\subsection{Function: \texttt{Spawn}}
+\begin{itemize}
+    \item \textbf{Description:} Spawns next piece in the field and generates new next.
+\end{itemize}
+
+\subsection{Function: \texttt{Connect}}
+\begin{itemize}
+    \item \textbf{Description:} Adjusts function to check the connection of the piece.
+\end{itemize}
+
+\subsection{Function: \texttt{CheckEnd}}
+\begin{itemize}
+    \item \textbf{Description:} Adjusts function to check if the game has ended.
+\end{itemize}
+
+\subsection{Function: \texttt{MovePiece}}
+\begin{itemize}
+    \item \textbf{Description:} Moves piece by a given shift in x and y.
+\end{itemize}
+
+\subsection{Function: \texttt{CheckApplyScore}}
+\begin{itemize}
+    \item \textbf{Description:} Checks and removes the filled rows and updates score.
+\end{itemize}
+
+\subsection{Function: \texttt{updateLevel}}
+\begin{itemize}
+    \item \textbf{Description:} Updates level and speed.
+\end{itemize}
+
+\subsection{Function: \texttt{RemoveRow}}
+\begin{itemize}
+    \item \textbf{Description:} Removes row on r coordinate and shifts upper rows one position down.
+\end{itemize}
+
+\subsection{Functions for shifting and rotating specific shapes}
+\begin{itemize}
+    \item \textbf{Examples:} \texttt{LiShiftLeft}, \texttt{LAShiftLeft}, \texttt{LZShiftLeft}, \texttt{SqShiftLeft}, \texttt{TShiftLeft}, etc.
+    \item \textbf{Description:} Shift left/right or rotate specific shape types.
+\end{itemize}
+
+\subsection{Functions for shape connection checks}
+\begin{itemize}
+    \item \textbf{Examples:} \texttt{LiConnect}, \texttt{LAConnect}, etc.
+    \item \textbf{Description:} Check if the specific shape is connected.
+\end{itemize}
+
+\subsection{Functions for spawn end checks}
+\begin{itemize}
+    \item \textbf{Examples:} \texttt{LiCheckEnd}, \texttt{LACheckEnd}, etc.
+    \item \textbf{Description:} Check if spawning a shape ends the game.
+\end{itemize}
+
+\end{document}
