@@ -1,10 +1,10 @@
 COMP = gcc
 
-SRC = tetris.c Engine/library.c Gui/tetrisGUI.c
-HEAD = tetris.c Engine/library.h Gui/tetrisGUI.h
-TEST = Tests/libTests.c Engine/library.c -lcheck -lsubunit -lrt -lpthread -lm
+SRC = tetris.c brick_game/tetris/library.c gui/cli/tetrisGUI.c
+HEAD = tetris.h brick_game/tetris/library.h gui/cli/tetrisGUI.h
+TEST = Tests/libTests.c brick_game/tetris/library.c -lcheck -lsubunit -lrt -lpthread -lm
 
-FLAGS = -Wall -Werror -Wextra -lncurses -g
+FLAGS = -Wall -Werror -Wextra -lncurses -g -fsanitize=address -fsanitize=leak -fsanitize=undefined
 
 all: install
 
@@ -12,7 +12,7 @@ Tetris/:
 	mkdir Tetris
 
 dist:
-	tar -czf tetris.tar.gz Engine/ Gui/ Tests/ tetris.c tetris.h Makefile
+	tar -czf tetris.tar.gz brick_game/ gui/ Tests/ tetris.c tetris.h Makefile
 
 dvi:
 	latex Documentation.tex
@@ -26,7 +26,9 @@ uninstall: Tetris/
 
 test: Tetris/
 	$(COMP) $(FLAGS) $(TEST) -o Tetris/unit_test.out
-	Tetris/unit_test.out
+
+valgrind_test: test
+	valgrind --leak-check=full --log-file="val.out" ./Tetris/unit_test.out
 
 gcov_report: Tetris/
 	$(COMP) -fprofile-arcs -ftest-coverage --coverage $(TEST) -o Tetris/test.out
@@ -43,5 +45,7 @@ clean: Tetris/
 	rm -rf Tetris
 
 style:
+	cp ../materials/linters/.clang-format .
 	clang-format -i $(SRC) Tests/* $(HEAD)
 	clang-format -n $(SRC) Tests/* $(HEAD)
+	rm .clang-format

@@ -38,6 +38,7 @@ typedef struct {
 
 // General state of the current game
 typedef struct {
+  Falling_t piece;
   char **field;
   Figure_t next;
   unsigned score;
@@ -48,219 +49,213 @@ typedef struct {
                // screen, 4 if an error occured
 } GameInfo_t;
 
-GameInfo_t Init();  // Initiates field and sets up the game at starting screen
+GameInfo_t *Init(GameInfo_t *tetris);  // Initiates field and sets up the game
+                                       // at starting screen
 
 // Frees memory from static structure in library.c
-void Destroy();
+void Destroy(GameInfo_t *tetris);
 
-void StartGame();  // Starts new game
+void StartGame(GameInfo_t *tetris);  // Starts new game
 
 // Reads user input and deals with consequences
 void userInput(UserAction_t action, char hold);
 
 // Returns static game info structure from library.c as is for gui
-GameInfo_t updateCurrentState();
-
-// Returns static falling structure from library.c as is for testing
-Falling_t getPiece();
-
-// Function for testing. Uploads new state into internal static variable tetris
-// and new falling figure fig into internal static variable piece.
-void uploadNewState(GameInfo_t state, Falling_t fig);
+GameInfo_t *updateCurrentState();
 
 // Pause or unpause in game
-void PauseResume();
+void PauseResume(GameInfo_t *tetris);
 
 // Ends game and updates high score
-void EndGame();
+void EndGame(GameInfo_t *tetris);
 
 // Adjusts function to shift the piece to the left
-void ShiftLeft();
+void ShiftLeft(GameInfo_t *tetris);
 
 // Adjusts function to shift the piece to the right
-void ShiftRight();
+void ShiftRight(GameInfo_t *tetris);
 
 // Adjusts function to rotate the piece
-void Rotate();
+void Rotate(GameInfo_t *tetris);
 
 // Adjusts function to draw the piece into the field
-void PutPiece();
+void PutPiece(GameInfo_t *tetris);
 
 // Adjusts function to erase the piece from the field
-void CleanPiece();
+void CleanPiece(GameInfo_t *tetris);
 
 // Drops the piece down until it connects
-void Drop();
+void Drop(GameInfo_t *tetris);
 
 // Moves the piece one step down
-void MoveDown();
+void MoveDown(GameInfo_t *tetris);
 
 // Generates the type of the next piece
-void GenerateNext();
+void GenerateNext(GameInfo_t *tetris);
 
 // Spawns next piece in the field and generates new next
-void Spawn();
+void Spawn(GameInfo_t *tetris);
 
 // Adjusts function to check the connection of the piece
-char Connect();
+char Connect(GameInfo_t *tetris);
 
 // Adjusts function to check if the game has ended
-char CheckEnd();
+char CheckEnd(GameInfo_t *tetris);
 
 // Moves piece by a given shift in x and y
-void MovePiece(char x, char y);
+void MovePiece(char x, char y, GameInfo_t *tetris);
 
 // Checks and removes the filled rows and updates score
-void CheckApplyScore();
+void CheckApplyScore(GameInfo_t *tetris);
 
 // Updates level and speed
-void updateLevel();
+void updateLevel(GameInfo_t *tetris);
 
 // Removes row on r coordinate and shifts upper rows one position down
-void RemoveRow(char r);
+void RemoveRow(char r, GameInfo_t *tetris);
 
 // Shifts Line one position Left
-void LiShiftLeft();
+void LiShiftLeft(GameInfo_t *tetris);
 
 // Shifts Left Angle one position Left
-void LAShiftLeft();
+void LAShiftLeft(GameInfo_t *tetris);
 
 // Shifts Right Angle one position Left
-void RAShiftLeft();
+void RAShiftLeft(GameInfo_t *tetris);
 
 // Shifts Left Zigzag one position Left
-void LZShiftLeft();
+void LZShiftLeft(GameInfo_t *tetris);
 
 // Shifts Right Zigzag one position Left
-void RZShiftLeft();
+void RZShiftLeft(GameInfo_t *tetris);
 
 // Shifts Square one position Left
-void SqShiftLeft();
+void SqShiftLeft(GameInfo_t *tetris);
 
 // Shifts T one position Left
-void TShiftLeft();
+void TShiftLeft(GameInfo_t *tetris);
 
 // Shifts Line one position Right
-void LiShiftRight();
+void LiShiftRight(GameInfo_t *tetris);
 
 // Shifts Left Angle one position Right
-void LAShiftRight();
+void LAShiftRight(GameInfo_t *tetris);
 
 // Shifts Right Angle one position Right
-void RAShiftRight();
+void RAShiftRight(GameInfo_t *tetris);
 
 // Shifts Left Zigzag one position Right
-void LZShiftRight();
+void LZShiftRight(GameInfo_t *tetris);
 
 // Shifts Right Zigzag one position Right
-void RZShiftRight();
+void RZShiftRight(GameInfo_t *tetris);
 
 // Shifts Square one position Right
-void SqShiftRight();
+void SqShiftRight(GameInfo_t *tetris);
 
 // Shifts T one position Right
-void TShiftRight();
+void TShiftRight(GameInfo_t *tetris);
 
 // Rotates Line
-void LiRotate();
+void LiRotate(GameInfo_t *tetris);
 
 // Rotates Left Angle
-void LARotate();
+void LARotate(GameInfo_t *tetris);
 
 // Rotates Right Angle
-void RARotate();
+void RARotate(GameInfo_t *tetris);
 
 // Rotates Left Zigzag
-void LZRotate();
+void LZRotate(GameInfo_t *tetris);
 
 // Rotates Right Zigzag
-void RZRotate();
+void RZRotate(GameInfo_t *tetris);
 
 // Rotates T
-void TRotate();
+void TRotate(GameInfo_t *tetris);
 
 // Erases line on piece position from the field
-void CleanLine();
+void CleanLine(GameInfo_t *tetris);
 
 // Erases left angle on piece position from the field
-void CleanLA();
+void CleanLA(GameInfo_t *tetris);
 
 // Erases right angle on piece position from the field
-void CleanRA();
+void CleanRA(GameInfo_t *tetris);
 
 // Erases left zigzag on piece position from the field
-void CleanLZ();
+void CleanLZ(GameInfo_t *tetris);
 
 // Erases right zigzag on piece position from the field
-void CleanRZ();
+void CleanRZ(GameInfo_t *tetris);
 
 // Erases square on piece position from the field
-void CleanSquare();
+void CleanSquare(GameInfo_t *tetris);
 
 // Erases T on piece position from the field
-void CleanT();
+void CleanT(GameInfo_t *tetris);
 
 // Draws line on piece position in the field
-void PutLine();
+void PutLine(GameInfo_t *tetris);
 
 // Draws left angle on piece position in the field
-void PutLA();
+void PutLA(GameInfo_t *tetris);
 
 // Draws right angle on piece position in the field
-void PutRA();
+void PutRA(GameInfo_t *tetris);
 
 // Draws left zigzag on piece position in the field
-void PutLZ();
+void PutLZ(GameInfo_t *tetris);
 
 // Draws right zigzag on piece position in the field
-void PutRZ();
+void PutRZ(GameInfo_t *tetris);
 
 // Draws square on piece position in the field
-void PutSquare();
+void PutSquare(GameInfo_t *tetris);
 
 // Draws T on piece position in the field
-void PutT();
+void PutT(GameInfo_t *tetris);
 
 // Checks the connection of the Line
-char LiConnect();
+char LiConnect(GameInfo_t *tetris);
 
 // Checks the connection of the Left Angle
-char LAConnect();
+char LAConnect(GameInfo_t *tetris);
 
 // Checks the connection of the Right Angle
-char RAConnect();
+char RAConnect(GameInfo_t *tetris);
 
 // Checks the connection of the Left Zigzag
-char LZConnect();
+char LZConnect(GameInfo_t *tetris);
 
 // Checks the connection of the Right Zigzag
-char RZConnect();
+char RZConnect(GameInfo_t *tetris);
 
 // Checks the connection of the Square
-char SqConnect();
+char SqConnect(GameInfo_t *tetris);
 
 // Checks the connection of the T
-char TConnect();
+char TConnect(GameInfo_t *tetris);
 
 // Checks if the spawn of the Line ends the game
-char LiCheckEnd();
+char LiCheckEnd(GameInfo_t *tetris);
 
 // Checks if the spawn of the Left Angle ends the game
-char LACheckEnd();
+char LACheckEnd(GameInfo_t *tetris);
 
 // Checks if the spawn of the Right Angle ends the game
-char RACheckEnd();
+char RACheckEnd(GameInfo_t *tetris);
 
 // Checks if the spawn of the Left Zigzag ends the game
-char LZCheckEnd();
+char LZCheckEnd(GameInfo_t *tetris);
 
 // Checks if the spawn of the Right Zigzag ends the game
-char RZCheckEnd();
+char RZCheckEnd(GameInfo_t *tetris);
 
 // Checks if the spawn of the Square ends the game
-char SqCheckEnd();
+char SqCheckEnd(GameInfo_t *tetris);
 
 // Checks if the spawn of the T ends the game
-char TCheckEnd();
+char TCheckEnd(GameInfo_t *tetris);
 
 #endif  // TETRIS_LIB

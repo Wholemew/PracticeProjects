@@ -1,3767 +1,3767 @@
 #include "libTests.h"
 
 START_TEST(init) {
-  GameInfo_t new = Init();
-  ck_assert_int_eq(new.level, 0);
-  ck_assert_int_eq(new.speed, 50);
-  ck_assert_int_eq(new.pause, 2);
-  Destroy();
+  GameInfo_t *new = updateCurrentState();
+  ck_assert_int_eq(new->level, 0);
+  ck_assert_int_eq(new->speed, 50);
+  ck_assert_int_eq(new->pause, 2);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(NG) {
-  GameInfo_t new = Init();
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.score, 0);
-  ck_assert_int_eq(new.pause, 0);
+  ck_assert_int_eq(new->score, 0);
+  ck_assert_int_eq(new->pause, 0);
   for (int i = 0; i < HEI - 4; ++i) {
-    for (int j = 0; j < WID; ++j) ck_assert_int_eq(new.field[i][j], EMP);
-    ck_assert_int_eq(new.field[i][WID], 0);
+    for (int j = 0; j < WID; ++j) ck_assert_int_eq(new->field[i][j], EMP);
+    ck_assert_int_eq(new->field[i][WID], 0);
   }
-  Destroy();
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(P) {
-  GameInfo_t new = Init();
-  StartGame();
-  PauseResume();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+  PauseResume(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.pause, 1);
-  PauseResume();
+  ck_assert_int_eq(new->pause, 1);
+  PauseResume(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.pause, 0);
-  Destroy();
+  ck_assert_int_eq(new->pause, 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(End) {
-  GameInfo_t new = Init();
-  StartGame();
-  EndGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+  EndGame(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.pause, 3);
-  ck_assert_int_eq(new.score, 0);
-  Destroy();
+  ck_assert_int_eq(new->pause, 3);
+  ck_assert_int_eq(new->score, 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(Spawning) {
-  GameInfo_t new = Init();
-  new.next = T;
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  uploadNewState(new, fig);
-  Spawn();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, WID / 2);
-  ck_assert_int_eq(fig.posy, HEI - 1);
-  ck_assert_int_eq(fig.type, T);
-  ck_assert_int_eq(fig.rotation, 0);
-  Destroy();
+  GameInfo_t *new = updateCurrentState();
+  new->next = T;
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
+
+  Spawn(new);
+
+  ck_assert_int_eq(new->piece.posx, WID / 2);
+  ck_assert_int_eq(new->piece.posy, HEI - 1);
+  ck_assert_int_eq(new->piece.type, T);
+  ck_assert_int_eq(new->piece.rotation, 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(Move) {
-  Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
-  MovePiece(3, -3);
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, WID / 2 + 3);
-  ck_assert_int_eq(fig.posy, HEI - 4);
-  Destroy();
+  GameInfo_t *new = updateCurrentState();
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
+  StartGame(new);
+  MovePiece(3, -3, new);
+
+  ck_assert_int_eq(new->piece.posx, WID / 2 + 3);
+  ck_assert_int_eq(new->piece.posy, HEI - 4);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(ScoreLevel) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
+  StartGame(new);
   new = updateCurrentState();
-  for (int i = 0; i < WID; ++i) new.field[0][i] = FIL;
-  uploadNewState(new, fig);
-  CheckApplyScore();
+  for (int i = 0; i < WID; ++i) new->field[0][i] = FIL;
+
+  CheckApplyScore(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.score, 100);
-  ck_assert_int_eq(new.high_score, 100);
-  ck_assert_int_eq(new.level, 0);
+  ck_assert_int_eq(new->score, 100);
+  ck_assert_int_eq(new->high_score, 100);
+  ck_assert_int_eq(new->level, 0);
   for (int i = 0; i < WID; ++i) {
-    new.field[1][i] = FIL;
-    new.field[2][i] = FIL;
+    new->field[1][i] = FIL;
+    new->field[2][i] = FIL;
   }
-  uploadNewState(new, fig);
-  CheckApplyScore();
+
+  CheckApplyScore(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.score, 400);
-  ck_assert_int_eq(new.high_score, 400);
-  ck_assert_int_eq(new.level, 0);
+  ck_assert_int_eq(new->score, 400);
+  ck_assert_int_eq(new->high_score, 400);
+  ck_assert_int_eq(new->level, 0);
   for (int i = 0; i < WID; ++i) {
-    new.field[3][i] = FIL;
-    new.field[4][i] = FIL;
-    new.field[5][i] = FIL;
+    new->field[3][i] = FIL;
+    new->field[4][i] = FIL;
+    new->field[5][i] = FIL;
   }
-  uploadNewState(new, fig);
-  CheckApplyScore();
+
+  CheckApplyScore(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.score, 1100);
-  ck_assert_int_eq(new.high_score, 1100);
-  ck_assert_int_eq(new.level, 1);
+  ck_assert_int_eq(new->score, 1100);
+  ck_assert_int_eq(new->high_score, 1100);
+  ck_assert_int_eq(new->level, 1);
   for (int i = 0; i < WID; ++i) {
-    new.field[6][i] = FIL;
-    new.field[7][i] = FIL;
-    new.field[8][i] = FIL;
-    new.field[9][i] = FIL;
+    new->field[6][i] = FIL;
+    new->field[7][i] = FIL;
+    new->field[8][i] = FIL;
+    new->field[9][i] = FIL;
   }
-  uploadNewState(new, fig);
-  CheckApplyScore();
+
+  CheckApplyScore(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.score, 2600);
-  ck_assert_int_eq(new.high_score, 2600);
-  ck_assert_int_eq(new.level, 4);
-  Destroy();
+  ck_assert_int_eq(new->score, 2600);
+  ck_assert_int_eq(new->high_score, 2600);
+  ck_assert_int_eq(new->level, 4);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineLeft1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LiShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  LiShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineLeft2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LiShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  LiShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineLeft3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[4][4] = FIL;
-  uploadNewState(new, fig);
-  LiShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[4][4] = FIL;
+
+  LiShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineLeft4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[5][4] = FIL;
-  uploadNewState(new, fig);
-  LiShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][4] = FIL;
+
+  LiShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LALeft1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LAShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  LAShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LALeft2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LAShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  LAShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LALeft3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LAShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  LAShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LALeft4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LAShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  LAShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LALeft5) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[4][4] = FIL;
-  uploadNewState(new, fig);
-  LAShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[4][4] = FIL;
+
+  LAShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LALeft6) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[3][4] = FIL;
-  uploadNewState(new, fig);
-  LAShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[3][4] = FIL;
+
+  LAShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LALeft7) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  new.field[5][4] = FIL;
-  new.field[5][5] = FIL;
-  new.field[5][6] = FIL;
-  new.field[5][7] = FIL;
-  new.field[4][7] = FIL;
-  uploadNewState(new, fig);
-  LAShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][4] = FIL;
+  new->field[5][5] = FIL;
+  new->field[5][6] = FIL;
+  new->field[5][7] = FIL;
+  new->field[4][7] = FIL;
+
+  LAShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LALeft8) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  new.field[4][5] = FIL;
-  uploadNewState(new, fig);
-  LAShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[4][5] = FIL;
+
+  LAShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RALeft1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RAShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  RAShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RALeft2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RAShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  RAShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RALeft3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RAShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  RAShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RALeft4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RAShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  RAShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RALeft5) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[5][6] = FIL;
-  uploadNewState(new, fig);
-  RAShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][6] = FIL;
+
+  RAShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RALeft6) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[4][4] = FIL;
-  new.field[5][5] = FIL;
-  new.field[4][5] = FIL;
-  new.field[3][5] = FIL;
-  new.field[3][6] = FIL;
-  uploadNewState(new, fig);
-  RAShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[4][4] = FIL;
+  new->field[5][5] = FIL;
+  new->field[4][5] = FIL;
+  new->field[3][5] = FIL;
+  new->field[3][6] = FIL;
+
+  RAShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RALeft7) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  new.field[4][4] = FIL;
-  new.field[5][5] = FIL;
-  new.field[4][5] = FIL;
-  new.field[5][6] = FIL;
-  new.field[5][7] = FIL;
-  uploadNewState(new, fig);
-  RAShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[4][4] = FIL;
+  new->field[5][5] = FIL;
+  new->field[4][5] = FIL;
+  new->field[5][6] = FIL;
+  new->field[5][7] = FIL;
+
+  RAShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RALeft8) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  new.field[3][5] = FIL;
-  uploadNewState(new, fig);
-  RAShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[3][5] = FIL;
+
+  RAShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZLeft1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LZShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  LZShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZLeft2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LZShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  LZShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZLeft3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[5][4] = FIL;
-  new.field[5][5] = FIL;
-  new.field[5][6] = FIL;
-  new.field[4][6] = FIL;
-  new.field[4][7] = FIL;
-  uploadNewState(new, fig);
-  LZShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][4] = FIL;
+  new->field[5][5] = FIL;
+  new->field[5][6] = FIL;
+  new->field[4][6] = FIL;
+  new->field[4][7] = FIL;
+
+  LZShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZLeft4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[5][5] = FIL;
-  uploadNewState(new, fig);
-  LZShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][5] = FIL;
+
+  LZShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZLeft1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RZShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  RZShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZLeft2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RZShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  RZShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZLeft3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[5][5] = FIL;
-  uploadNewState(new, fig);
-  RZShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][5] = FIL;
+
+  RZShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZLeft4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[4][4] = FIL;
-  uploadNewState(new, fig);
-  RZShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[4][4] = FIL;
+
+  RZShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(SqLeft1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Square;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Square;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  SqShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  SqShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(SqLeft2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Square;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Square;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[4][4] = FIL;
-  uploadNewState(new, fig);
-  SqShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[4][4] = FIL;
+
+  SqShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TLeft1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  TShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  TShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TLeft2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  TShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  TShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TLeft3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  TShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  TShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TLeft4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  TShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 4);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  TShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 4);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TLeft5) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[5][5] = FIL;
-  uploadNewState(new, fig);
-  TShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][5] = FIL;
+
+  TShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TLeft6) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[4][4] = FIL;
-  uploadNewState(new, fig);
-  TShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[4][4] = FIL;
+
+  TShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TLeft7) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  new.field[5][4] = FIL;
-  new.field[5][5] = FIL;
-  new.field[5][6] = FIL;
-  new.field[5][7] = FIL;
-  new.field[4][6] = FIL;
-  uploadNewState(new, fig);
-  TShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][4] = FIL;
+  new->field[5][5] = FIL;
+  new->field[5][6] = FIL;
+  new->field[5][7] = FIL;
+  new->field[4][6] = FIL;
+
+  TShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TLeft8) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  new.field[3][4] = FIL;
-  new.field[5][5] = FIL;
-  new.field[4][5] = FIL;
-  new.field[3][5] = FIL;
-  new.field[4][6] = FIL;
-  uploadNewState(new, fig);
-  TShiftLeft();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[3][4] = FIL;
+  new->field[5][5] = FIL;
+  new->field[4][5] = FIL;
+  new->field[3][5] = FIL;
+  new->field[4][6] = FIL;
+
+  TShiftLeft(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineRight1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LiShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  LiShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineRight2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LiShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  LiShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineRight3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[4][6] = FIL;
-  uploadNewState(new, fig);
-  LiShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[4][6] = FIL;
+
+  LiShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineRight4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[5][9] = FIL;
-  uploadNewState(new, fig);
-  LiShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][9] = FIL;
+
+  LiShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LARight1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LAShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  LAShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LARight2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LAShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  LAShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LARight3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LAShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  LAShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LARight4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LAShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  LAShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LARight5) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[5][6] = FIL;
-  uploadNewState(new, fig);
-  LAShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][6] = FIL;
+
+  LAShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LARight6) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[3][6] = FIL;
-  uploadNewState(new, fig);
-  LAShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[3][6] = FIL;
+
+  LAShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LARight7) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  new.field[4][8] = FIL;
-  uploadNewState(new, fig);
-  LAShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[4][8] = FIL;
+
+  LAShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LARight8) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  new.field[4][7] = FIL;
-  uploadNewState(new, fig);
-  LAShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[4][7] = FIL;
+
+  LAShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RARight1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RAShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  RAShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RARight2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RAShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  RAShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RARight3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RAShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  RAShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RARight4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RAShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  RAShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RARight5) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[5][8] = FIL;
-  uploadNewState(new, fig);
-  RAShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][8] = FIL;
+
+  RAShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RARight6) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[5][6] = FIL;
-  new.field[5][5] = FIL;
-  new.field[4][5] = FIL;
-  new.field[3][5] = FIL;
-  new.field[3][6] = FIL;
-  uploadNewState(new, fig);
-  RAShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][6] = FIL;
+  new->field[5][5] = FIL;
+  new->field[4][5] = FIL;
+  new->field[3][5] = FIL;
+  new->field[3][6] = FIL;
+
+  RAShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RARight7) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  new.field[5][8] = FIL;
-  uploadNewState(new, fig);
-  RAShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][8] = FIL;
+
+  RAShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RARight8) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  new.field[3][7] = FIL;
-  uploadNewState(new, fig);
-  RAShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[3][7] = FIL;
+
+  RAShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZRight1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LZShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  LZShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZRight2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LZShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  LZShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZRight3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[5][7] = FIL;
-  uploadNewState(new, fig);
-  LZShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][7] = FIL;
+
+  LZShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZRight4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[4][7] = FIL;
-  uploadNewState(new, fig);
-  LZShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[4][7] = FIL;
+
+  LZShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZRight1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RZShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  RZShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZRight2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RZShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  RZShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZRight3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[5][8] = FIL;
-  uploadNewState(new, fig);
-  RZShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][8] = FIL;
+
+  RZShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZRight4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[5][6] = FIL;
-  uploadNewState(new, fig);
-  RZShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][6] = FIL;
+
+  RZShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(SqRight1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Square;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Square;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  SqShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  SqShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(SqRight2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Square;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Square;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[4][7] = FIL;
-  uploadNewState(new, fig);
-  SqShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[4][7] = FIL;
+
+  SqShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TRight1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  TShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  TShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TRight2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  TShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  TShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TRight3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  TShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  TShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TRight4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  TShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 6);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+
+  TShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 6);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TRight5) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[5][7] = FIL;
-  uploadNewState(new, fig);
-  TShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][7] = FIL;
+
+  TShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TRight6) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[3][7] = FIL;
-  uploadNewState(new, fig);
-  TShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[3][7] = FIL;
+
+  TShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TRight7) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  new.field[5][8] = FIL;
-  uploadNewState(new, fig);
-  TShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][8] = FIL;
+
+  TShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TRight8) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  new.field[5][6] = FIL;
-  uploadNewState(new, fig);
-  TShiftRight();
-  fig = getPiece();
-  ck_assert_int_eq(fig.posx, 5);
-  ck_assert_int_eq(fig.posy, 5);
-  Destroy();
+  new->field[5][6] = FIL;
+
+  TShiftRight(new);
+
+  ck_assert_int_eq(new->piece.posx, 5);
+  ck_assert_int_eq(new->piece.posy, 5);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LinePut1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutLine();
+
+  PutLine(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[5][5], FIL);
-  ck_assert_int_eq(new.field[4][5], FIL);
-  ck_assert_int_eq(new.field[3][5], FIL);
-  ck_assert_int_eq(new.field[2][5], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[5][5], FIL);
+  ck_assert_int_eq(new->field[4][5], FIL);
+  ck_assert_int_eq(new->field[3][5], FIL);
+  ck_assert_int_eq(new->field[2][5], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LinePut2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutLine();
+
+  PutLine(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[5][5], FIL);
-  ck_assert_int_eq(new.field[5][6], FIL);
-  ck_assert_int_eq(new.field[5][7], FIL);
-  ck_assert_int_eq(new.field[5][8], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[5][5], FIL);
+  ck_assert_int_eq(new->field[5][6], FIL);
+  ck_assert_int_eq(new->field[5][7], FIL);
+  ck_assert_int_eq(new->field[5][8], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineClean1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanLine();
-  ck_assert_int_eq(new.field[5][5], EMP);
-  ck_assert_int_eq(new.field[4][5], EMP);
-  ck_assert_int_eq(new.field[3][5], EMP);
-  ck_assert_int_eq(new.field[2][5], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanLine(new);
+  ck_assert_int_eq(new->field[5][5], EMP);
+  ck_assert_int_eq(new->field[4][5], EMP);
+  ck_assert_int_eq(new->field[3][5], EMP);
+  ck_assert_int_eq(new->field[2][5], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineClean2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanLine();
-  ck_assert_int_eq(new.field[5][5], EMP);
-  ck_assert_int_eq(new.field[5][6], EMP);
-  ck_assert_int_eq(new.field[5][7], EMP);
-  ck_assert_int_eq(new.field[5][8], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanLine(new);
+  ck_assert_int_eq(new->field[5][5], EMP);
+  ck_assert_int_eq(new->field[5][6], EMP);
+  ck_assert_int_eq(new->field[5][7], EMP);
+  ck_assert_int_eq(new->field[5][8], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LAPut1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutLA();
+
+  PutLA(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[5][5], FIL);
-  ck_assert_int_eq(new.field[4][5], FIL);
-  ck_assert_int_eq(new.field[4][6], FIL);
-  ck_assert_int_eq(new.field[4][7], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[5][5], FIL);
+  ck_assert_int_eq(new->field[4][5], FIL);
+  ck_assert_int_eq(new->field[4][6], FIL);
+  ck_assert_int_eq(new->field[4][7], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LAPut2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutLA();
+
+  PutLA(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[5][5], FIL);
-  ck_assert_int_eq(new.field[4][5], FIL);
-  ck_assert_int_eq(new.field[5][6], FIL);
-  ck_assert_int_eq(new.field[3][5], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[5][5], FIL);
+  ck_assert_int_eq(new->field[4][5], FIL);
+  ck_assert_int_eq(new->field[5][6], FIL);
+  ck_assert_int_eq(new->field[3][5], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LAPut3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutLA();
+
+  PutLA(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[5][5], FIL);
-  ck_assert_int_eq(new.field[5][6], FIL);
-  ck_assert_int_eq(new.field[5][7], FIL);
-  ck_assert_int_eq(new.field[4][7], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[5][5], FIL);
+  ck_assert_int_eq(new->field[5][6], FIL);
+  ck_assert_int_eq(new->field[5][7], FIL);
+  ck_assert_int_eq(new->field[4][7], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LAPut4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutLA();
+
+  PutLA(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[5][6], FIL);
-  ck_assert_int_eq(new.field[4][6], FIL);
-  ck_assert_int_eq(new.field[3][6], FIL);
-  ck_assert_int_eq(new.field[3][5], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[5][6], FIL);
+  ck_assert_int_eq(new->field[4][6], FIL);
+  ck_assert_int_eq(new->field[3][6], FIL);
+  ck_assert_int_eq(new->field[3][5], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LAClean1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanLA();
-  ck_assert_int_eq(new.field[5][5], EMP);
-  ck_assert_int_eq(new.field[4][5], EMP);
-  ck_assert_int_eq(new.field[4][6], EMP);
-  ck_assert_int_eq(new.field[4][7], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanLA(new);
+  ck_assert_int_eq(new->field[5][5], EMP);
+  ck_assert_int_eq(new->field[4][5], EMP);
+  ck_assert_int_eq(new->field[4][6], EMP);
+  ck_assert_int_eq(new->field[4][7], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LAClean2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanLA();
-  ck_assert_int_eq(new.field[5][6], EMP);
-  ck_assert_int_eq(new.field[5][5], EMP);
-  ck_assert_int_eq(new.field[4][5], EMP);
-  ck_assert_int_eq(new.field[3][5], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanLA(new);
+  ck_assert_int_eq(new->field[5][6], EMP);
+  ck_assert_int_eq(new->field[5][5], EMP);
+  ck_assert_int_eq(new->field[4][5], EMP);
+  ck_assert_int_eq(new->field[3][5], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LAClean3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanLA();
-  ck_assert_int_eq(new.field[5][5], EMP);
-  ck_assert_int_eq(new.field[5][6], EMP);
-  ck_assert_int_eq(new.field[5][7], EMP);
-  ck_assert_int_eq(new.field[4][7], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanLA(new);
+  ck_assert_int_eq(new->field[5][5], EMP);
+  ck_assert_int_eq(new->field[5][6], EMP);
+  ck_assert_int_eq(new->field[5][7], EMP);
+  ck_assert_int_eq(new->field[4][7], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LAClean4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanLA();
-  ck_assert_int_eq(new.field[5][6], EMP);
-  ck_assert_int_eq(new.field[4][6], EMP);
-  ck_assert_int_eq(new.field[3][6], EMP);
-  ck_assert_int_eq(new.field[3][5], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanLA(new);
+  ck_assert_int_eq(new->field[5][6], EMP);
+  ck_assert_int_eq(new->field[4][6], EMP);
+  ck_assert_int_eq(new->field[3][6], EMP);
+  ck_assert_int_eq(new->field[3][5], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RAPut1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutRA();
+
+  PutRA(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[4][5], FIL);
-  ck_assert_int_eq(new.field[4][6], FIL);
-  ck_assert_int_eq(new.field[4][7], FIL);
-  ck_assert_int_eq(new.field[5][7], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[4][5], FIL);
+  ck_assert_int_eq(new->field[4][6], FIL);
+  ck_assert_int_eq(new->field[4][7], FIL);
+  ck_assert_int_eq(new->field[5][7], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RAPut2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutRA();
+
+  PutRA(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[5][5], FIL);
-  ck_assert_int_eq(new.field[4][5], FIL);
-  ck_assert_int_eq(new.field[3][5], FIL);
-  ck_assert_int_eq(new.field[3][6], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[5][5], FIL);
+  ck_assert_int_eq(new->field[4][5], FIL);
+  ck_assert_int_eq(new->field[3][5], FIL);
+  ck_assert_int_eq(new->field[3][6], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RAPut3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutRA();
+
+  PutRA(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[4][5], FIL);
-  ck_assert_int_eq(new.field[5][5], FIL);
-  ck_assert_int_eq(new.field[5][6], FIL);
-  ck_assert_int_eq(new.field[5][7], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[4][5], FIL);
+  ck_assert_int_eq(new->field[5][5], FIL);
+  ck_assert_int_eq(new->field[5][6], FIL);
+  ck_assert_int_eq(new->field[5][7], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RAPut4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutRA();
+
+  PutRA(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[5][5], FIL);
-  ck_assert_int_eq(new.field[5][6], FIL);
-  ck_assert_int_eq(new.field[4][6], FIL);
-  ck_assert_int_eq(new.field[3][6], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[5][5], FIL);
+  ck_assert_int_eq(new->field[5][6], FIL);
+  ck_assert_int_eq(new->field[4][6], FIL);
+  ck_assert_int_eq(new->field[3][6], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RAClean1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanRA();
-  ck_assert_int_eq(new.field[4][5], EMP);
-  ck_assert_int_eq(new.field[4][6], EMP);
-  ck_assert_int_eq(new.field[4][7], EMP);
-  ck_assert_int_eq(new.field[5][7], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanRA(new);
+  ck_assert_int_eq(new->field[4][5], EMP);
+  ck_assert_int_eq(new->field[4][6], EMP);
+  ck_assert_int_eq(new->field[4][7], EMP);
+  ck_assert_int_eq(new->field[5][7], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RAClean2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanRA();
-  ck_assert_int_eq(new.field[5][5], EMP);
-  ck_assert_int_eq(new.field[4][5], EMP);
-  ck_assert_int_eq(new.field[3][5], EMP);
-  ck_assert_int_eq(new.field[3][6], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanRA(new);
+  ck_assert_int_eq(new->field[5][5], EMP);
+  ck_assert_int_eq(new->field[4][5], EMP);
+  ck_assert_int_eq(new->field[3][5], EMP);
+  ck_assert_int_eq(new->field[3][6], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RAClean3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanRA();
-  ck_assert_int_eq(new.field[4][5], EMP);
-  ck_assert_int_eq(new.field[5][5], EMP);
-  ck_assert_int_eq(new.field[5][6], EMP);
-  ck_assert_int_eq(new.field[5][7], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanRA(new);
+  ck_assert_int_eq(new->field[4][5], EMP);
+  ck_assert_int_eq(new->field[5][5], EMP);
+  ck_assert_int_eq(new->field[5][6], EMP);
+  ck_assert_int_eq(new->field[5][7], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RAClean4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanRA();
-  ck_assert_int_eq(new.field[5][5], EMP);
-  ck_assert_int_eq(new.field[5][6], EMP);
-  ck_assert_int_eq(new.field[4][6], EMP);
-  ck_assert_int_eq(new.field[3][6], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanRA(new);
+  ck_assert_int_eq(new->field[5][5], EMP);
+  ck_assert_int_eq(new->field[5][6], EMP);
+  ck_assert_int_eq(new->field[4][6], EMP);
+  ck_assert_int_eq(new->field[3][6], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZPut1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutLZ();
+
+  PutLZ(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[5][5], FIL);
-  ck_assert_int_eq(new.field[5][6], FIL);
-  ck_assert_int_eq(new.field[4][6], FIL);
-  ck_assert_int_eq(new.field[4][7], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[5][5], FIL);
+  ck_assert_int_eq(new->field[5][6], FIL);
+  ck_assert_int_eq(new->field[4][6], FIL);
+  ck_assert_int_eq(new->field[4][7], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZPut2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutLZ();
+
+  PutLZ(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[5][6], FIL);
-  ck_assert_int_eq(new.field[4][6], FIL);
-  ck_assert_int_eq(new.field[4][5], FIL);
-  ck_assert_int_eq(new.field[3][5], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[5][6], FIL);
+  ck_assert_int_eq(new->field[4][6], FIL);
+  ck_assert_int_eq(new->field[4][5], FIL);
+  ck_assert_int_eq(new->field[3][5], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZClean1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanLZ();
-  ck_assert_int_eq(new.field[5][5], EMP);
-  ck_assert_int_eq(new.field[5][6], EMP);
-  ck_assert_int_eq(new.field[4][6], EMP);
-  ck_assert_int_eq(new.field[4][7], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanLZ(new);
+  ck_assert_int_eq(new->field[5][5], EMP);
+  ck_assert_int_eq(new->field[5][6], EMP);
+  ck_assert_int_eq(new->field[4][6], EMP);
+  ck_assert_int_eq(new->field[4][7], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZClean2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanLZ();
-  ck_assert_int_eq(new.field[5][6], EMP);
-  ck_assert_int_eq(new.field[4][6], EMP);
-  ck_assert_int_eq(new.field[4][5], EMP);
-  ck_assert_int_eq(new.field[3][5], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanLZ(new);
+  ck_assert_int_eq(new->field[5][6], EMP);
+  ck_assert_int_eq(new->field[4][6], EMP);
+  ck_assert_int_eq(new->field[4][5], EMP);
+  ck_assert_int_eq(new->field[3][5], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZPut1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutRZ();
+
+  PutRZ(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[4][5], FIL);
-  ck_assert_int_eq(new.field[4][6], FIL);
-  ck_assert_int_eq(new.field[5][6], FIL);
-  ck_assert_int_eq(new.field[5][7], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[4][5], FIL);
+  ck_assert_int_eq(new->field[4][6], FIL);
+  ck_assert_int_eq(new->field[5][6], FIL);
+  ck_assert_int_eq(new->field[5][7], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZPut2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutRZ();
+
+  PutRZ(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[5][5], FIL);
-  ck_assert_int_eq(new.field[4][5], FIL);
-  ck_assert_int_eq(new.field[4][6], FIL);
-  ck_assert_int_eq(new.field[3][6], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[5][5], FIL);
+  ck_assert_int_eq(new->field[4][5], FIL);
+  ck_assert_int_eq(new->field[4][6], FIL);
+  ck_assert_int_eq(new->field[3][6], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZClean1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanRZ();
-  ck_assert_int_eq(new.field[4][5], EMP);
-  ck_assert_int_eq(new.field[4][6], EMP);
-  ck_assert_int_eq(new.field[5][6], EMP);
-  ck_assert_int_eq(new.field[5][7], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanRZ(new);
+  ck_assert_int_eq(new->field[4][5], EMP);
+  ck_assert_int_eq(new->field[4][6], EMP);
+  ck_assert_int_eq(new->field[5][6], EMP);
+  ck_assert_int_eq(new->field[5][7], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZClean2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanRZ();
-  ck_assert_int_eq(new.field[5][5], EMP);
-  ck_assert_int_eq(new.field[4][5], EMP);
-  ck_assert_int_eq(new.field[4][6], EMP);
-  ck_assert_int_eq(new.field[3][6], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanRZ(new);
+  ck_assert_int_eq(new->field[5][5], EMP);
+  ck_assert_int_eq(new->field[4][5], EMP);
+  ck_assert_int_eq(new->field[4][6], EMP);
+  ck_assert_int_eq(new->field[3][6], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(SqPut1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Square;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Square;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutSquare();
+
+  PutSquare(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[5][5], FIL);
-  ck_assert_int_eq(new.field[4][5], FIL);
-  ck_assert_int_eq(new.field[4][6], FIL);
-  ck_assert_int_eq(new.field[5][6], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[5][5], FIL);
+  ck_assert_int_eq(new->field[4][5], FIL);
+  ck_assert_int_eq(new->field[4][6], FIL);
+  ck_assert_int_eq(new->field[5][6], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(SqClean1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Square;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Square;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanSquare();
-  ck_assert_int_eq(new.field[5][5], EMP);
-  ck_assert_int_eq(new.field[4][5], EMP);
-  ck_assert_int_eq(new.field[4][6], EMP);
-  ck_assert_int_eq(new.field[5][6], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanSquare(new);
+  ck_assert_int_eq(new->field[5][5], EMP);
+  ck_assert_int_eq(new->field[4][5], EMP);
+  ck_assert_int_eq(new->field[4][6], EMP);
+  ck_assert_int_eq(new->field[5][6], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TPut1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutT();
+
+  PutT(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[5][6], FIL);
-  ck_assert_int_eq(new.field[4][5], FIL);
-  ck_assert_int_eq(new.field[4][6], FIL);
-  ck_assert_int_eq(new.field[4][7], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[5][6], FIL);
+  ck_assert_int_eq(new->field[4][5], FIL);
+  ck_assert_int_eq(new->field[4][6], FIL);
+  ck_assert_int_eq(new->field[4][7], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TPut2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutT();
+
+  PutT(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[5][6], FIL);
-  ck_assert_int_eq(new.field[4][5], FIL);
-  ck_assert_int_eq(new.field[4][6], FIL);
-  ck_assert_int_eq(new.field[3][6], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[5][6], FIL);
+  ck_assert_int_eq(new->field[4][5], FIL);
+  ck_assert_int_eq(new->field[4][6], FIL);
+  ck_assert_int_eq(new->field[3][6], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TPut3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutT();
+
+  PutT(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[5][6], FIL);
-  ck_assert_int_eq(new.field[5][5], FIL);
-  ck_assert_int_eq(new.field[4][6], FIL);
-  ck_assert_int_eq(new.field[5][7], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[5][6], FIL);
+  ck_assert_int_eq(new->field[5][5], FIL);
+  ck_assert_int_eq(new->field[4][6], FIL);
+  ck_assert_int_eq(new->field[5][7], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TPut4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  PutT();
+
+  PutT(new);
   new = updateCurrentState();
-  ck_assert_int_eq(new.field[4][6], FIL);
-  ck_assert_int_eq(new.field[5][5], FIL);
-  ck_assert_int_eq(new.field[4][5], FIL);
-  ck_assert_int_eq(new.field[3][5], FIL);
-  Destroy();
+  ck_assert_int_eq(new->field[4][6], FIL);
+  ck_assert_int_eq(new->field[5][5], FIL);
+  ck_assert_int_eq(new->field[4][5], FIL);
+  ck_assert_int_eq(new->field[3][5], FIL);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TClean1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanT();
-  ck_assert_int_eq(new.field[5][6], EMP);
-  ck_assert_int_eq(new.field[4][5], EMP);
-  ck_assert_int_eq(new.field[4][6], EMP);
-  ck_assert_int_eq(new.field[4][7], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanT(new);
+  ck_assert_int_eq(new->field[5][6], EMP);
+  ck_assert_int_eq(new->field[4][5], EMP);
+  ck_assert_int_eq(new->field[4][6], EMP);
+  ck_assert_int_eq(new->field[4][7], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TClean2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanT();
-  ck_assert_int_eq(new.field[5][6], EMP);
-  ck_assert_int_eq(new.field[4][5], EMP);
-  ck_assert_int_eq(new.field[4][6], EMP);
-  ck_assert_int_eq(new.field[3][6], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanT(new);
+  ck_assert_int_eq(new->field[5][6], EMP);
+  ck_assert_int_eq(new->field[4][5], EMP);
+  ck_assert_int_eq(new->field[4][6], EMP);
+  ck_assert_int_eq(new->field[3][6], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TClean3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanT();
-  ck_assert_int_eq(new.field[5][6], EMP);
-  ck_assert_int_eq(new.field[5][5], EMP);
-  ck_assert_int_eq(new.field[4][6], EMP);
-  ck_assert_int_eq(new.field[5][7], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanT(new);
+  ck_assert_int_eq(new->field[5][6], EMP);
+  ck_assert_int_eq(new->field[5][5], EMP);
+  ck_assert_int_eq(new->field[4][6], EMP);
+  ck_assert_int_eq(new->field[5][7], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TClean4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
   for (int i = 2; i < 6; ++i)
-    for (int j = 0; j < WID; ++j) new.field[i][j] = FIL;
-  uploadNewState(new, fig);
-  CleanT();
-  ck_assert_int_eq(new.field[5][5], EMP);
-  ck_assert_int_eq(new.field[4][5], EMP);
-  ck_assert_int_eq(new.field[3][5], EMP);
-  ck_assert_int_eq(new.field[4][6], EMP);
-  Destroy();
+    for (int j = 0; j < WID; ++j) new->field[i][j] = FIL;
+
+  CleanT(new);
+  ck_assert_int_eq(new->field[5][5], EMP);
+  ck_assert_int_eq(new->field[4][5], EMP);
+  ck_assert_int_eq(new->field[3][5], EMP);
+  ck_assert_int_eq(new->field[4][6], EMP);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineRotate1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LiRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 1);
-  Destroy();
+
+  LiRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineRotate2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LiRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 0);
-  Destroy();
+
+  LiRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineRotate3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[5][7] = FIL;
-  uploadNewState(new, fig);
-  LiRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 0);
-  Destroy();
+  new->field[5][7] = FIL;
+
+  LiRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineRotate4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[2][5] = FIL;
-  uploadNewState(new, fig);
-  LiRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 1);
-  Destroy();
+  new->field[2][5] = FIL;
+
+  LiRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LARotate1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LARotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 1);
-  Destroy();
+
+  LARotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LARotate2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LARotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 2);
-  Destroy();
+
+  LARotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 2);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LARotate3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LARotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 3);
-  Destroy();
+
+  LARotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 3);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LARotate4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LARotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 0);
-  Destroy();
+
+  LARotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LARotate5) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[5][6] = FIL;
-  uploadNewState(new, fig);
-  LARotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 0);
-  Destroy();
+  new->field[5][6] = FIL;
+
+  LARotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LARotate6) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[4][7] = FIL;
-  uploadNewState(new, fig);
-  LARotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 1);
-  Destroy();
+  new->field[4][7] = FIL;
+
+  LARotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LARotate7) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  new.field[3][6] = FIL;
-  uploadNewState(new, fig);
-  LARotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 2);
-  Destroy();
+  new->field[3][6] = FIL;
+
+  LARotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 2);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LARotate8) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  new.field[4][5] = FIL;
-  uploadNewState(new, fig);
-  LARotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 3);
-  Destroy();
+  new->field[4][5] = FIL;
+
+  LARotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 3);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RARotate1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RARotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 1);
-  Destroy();
+
+  RARotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RARotate2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RARotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 2);
-  Destroy();
+
+  RARotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 2);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RARotate3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RARotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 3);
-  Destroy();
+
+  RARotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 3);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RARotate4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RARotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 0);
-  Destroy();
+
+  RARotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RARotate5) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[5][5] = FIL;
-  uploadNewState(new, fig);
-  RARotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 0);
-  Destroy();
+  new->field[5][5] = FIL;
+
+  RARotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RARotate6) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[5][6] = FIL;
-  uploadNewState(new, fig);
-  RARotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 1);
-  Destroy();
+  new->field[5][6] = FIL;
+
+  RARotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RARotate7) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  new.field[3][6] = FIL;
-  uploadNewState(new, fig);
-  RARotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 2);
-  Destroy();
+  new->field[3][6] = FIL;
+
+  RARotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 2);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RARotate8) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  new.field[5][7] = FIL;
-  uploadNewState(new, fig);
-  RARotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 3);
-  Destroy();
+  new->field[5][7] = FIL;
+
+  RARotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 3);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZRotate1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LZRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 1);
-  Destroy();
+
+  LZRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZRotate2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  LZRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 0);
-  Destroy();
+
+  LZRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZRotate3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+
+  StartGame(new);
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[3][5] = FIL;
-  uploadNewState(new, fig);
-  LZRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 0);
-  Destroy();
+  new->field[3][5] = FIL;
+
+  LZRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZRotate4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[5][5] = FIL;
-  uploadNewState(new, fig);
-  LZRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 1);
-  Destroy();
+  new->field[5][5] = FIL;
+
+  LZRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZRotate1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RZRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 1);
-  Destroy();
+
+  RZRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZRotate2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  RZRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 0);
-  Destroy();
+
+  RZRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZRotate3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[5][5] = FIL;
-  uploadNewState(new, fig);
-  RZRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 0);
-  Destroy();
+  new->field[5][5] = FIL;
+
+  RZRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZRotate4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[5][6] = FIL;
-  uploadNewState(new, fig);
-  RZRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 1);
-  Destroy();
+  new->field[5][6] = FIL;
+
+  RZRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TRotate1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  TRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 1);
-  Destroy();
+
+  TRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TRotate2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  TRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 2);
-  Destroy();
+
+  TRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 2);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TRotate3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  TRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 3);
-  Destroy();
+
+  TRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 3);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TRotate4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  TRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 0);
-  Destroy();
+
+  TRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TRotate6) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[5][5] = FIL;
-  uploadNewState(new, fig);
-  TRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 1);
-  Destroy();
+  new->field[5][5] = FIL;
+
+  TRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TRotate7) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  new.field[3][5] = FIL;
-  uploadNewState(new, fig);
-  TRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 2);
-  Destroy();
+  new->field[3][5] = FIL;
+
+  TRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 2);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TRotate8) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  new.field[5][6] = FIL;
-  uploadNewState(new, fig);
-  TRotate();
-  fig = getPiece();
-  ck_assert_int_eq(fig.rotation, 3);
-  Destroy();
+  new->field[5][6] = FIL;
+
+  TRotate(new);
+
+  ck_assert_int_eq(new->piece.rotation, 3);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineConnect1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LiConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(LiConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineConnect2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LiConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(LiConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineConnect3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[1][5] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LiConnect(), 1);
-  Destroy();
+  new->field[1][5] = FIL;
+
+  ck_assert_int_eq(LiConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineConnect4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[4][8] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LiConnect(), 1);
-  Destroy();
+  new->field[4][8] = FIL;
+
+  ck_assert_int_eq(LiConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LAConnect1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LAConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(LAConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LAConnect2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LAConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(LAConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LAConnect3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LAConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(LAConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LAConnect4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LAConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(LAConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LAConnect5) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[3][6] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LAConnect(), 1);
-  Destroy();
+  new->field[3][6] = FIL;
+
+  ck_assert_int_eq(LAConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LAConnect6) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[4][6] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LAConnect(), 1);
-  Destroy();
+  new->field[4][6] = FIL;
+
+  ck_assert_int_eq(LAConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LAConnect7) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  new.field[4][6] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LAConnect(), 1);
-  Destroy();
+  new->field[4][6] = FIL;
+
+  ck_assert_int_eq(LAConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LAConnect8) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  new.field[2][5] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LAConnect(), 1);
-  Destroy();
+  new->field[2][5] = FIL;
+
+  ck_assert_int_eq(LAConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RAConnect1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(RAConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(RAConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RAConnect2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(RAConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(RAConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RAConnect3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(RAConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(RAConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RAConnect4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(RAConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(RAConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RAConnect5) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[3][6] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(RAConnect(), 1);
-  Destroy();
+  new->field[3][6] = FIL;
+
+  ck_assert_int_eq(RAConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RAConnect6) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[2][5] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(RAConnect(), 1);
-  Destroy();
+  new->field[2][5] = FIL;
+
+  ck_assert_int_eq(RAConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RAConnect7) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  new.field[4][6] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(RAConnect(), 1);
-  Destroy();
+  new->field[4][6] = FIL;
+
+  ck_assert_int_eq(RAConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RAConnect8) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  new.field[4][5] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(RAConnect(), 1);
-  Destroy();
+  new->field[4][5] = FIL;
+
+  ck_assert_int_eq(RAConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZConnect1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LZConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(LZConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZConnect2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LZConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(LZConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZConnect3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[3][6] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LZConnect(), 1);
-  Destroy();
+  new->field[3][6] = FIL;
+
+  ck_assert_int_eq(LZConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZConnect4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[2][5] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LZConnect(), 1);
-  Destroy();
+  new->field[2][5] = FIL;
+
+  ck_assert_int_eq(LZConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZConnect1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(RZConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(RZConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZConnect2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(RZConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(RZConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZConnect3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[4][7] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(RZConnect(), 1);
-  Destroy();
+  new->field[4][7] = FIL;
+
+  ck_assert_int_eq(RZConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZConnect4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[2][6] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(RZConnect(), 1);
-  Destroy();
+  new->field[2][6] = FIL;
+
+  ck_assert_int_eq(RZConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(SqConnect1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Square;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Square;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(SqConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(SqConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(SqConnect2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Square;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Square;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[3][6] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(SqConnect(), 1);
-  Destroy();
+  new->field[3][6] = FIL;
+
+  ck_assert_int_eq(SqConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TConnect1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(TConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(TConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TConnect2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(TConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(TConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TConnect3) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(TConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(TConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TConnect4) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(TConnect(), 0);
-  Destroy();
+
+  ck_assert_int_eq(TConnect(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TConnect5) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[3][6] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(TConnect(), 1);
-  Destroy();
+  new->field[3][6] = FIL;
+
+  ck_assert_int_eq(TConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TConnect6) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 1;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 1;
   new = updateCurrentState();
-  new.field[3][5] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(TConnect(), 1);
-  Destroy();
+  new->field[3][5] = FIL;
+
+  ck_assert_int_eq(TConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TConnect7) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 2;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 2;
   new = updateCurrentState();
-  new.field[4][7] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(TConnect(), 1);
-  Destroy();
+  new->field[4][7] = FIL;
+
+  ck_assert_int_eq(TConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TConnect8) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 3;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 3;
   new = updateCurrentState();
-  new.field[3][6] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(TConnect(), 1);
-  Destroy();
+  new->field[3][6] = FIL;
+
+  ck_assert_int_eq(TConnect(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineCheck1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LiCheckEnd(), 0);
-  Destroy();
+
+  ck_assert_int_eq(LiCheckEnd(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LineCheck2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Line;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Line;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[4][5] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LiCheckEnd(), 1);
-  Destroy();
+  new->field[4][5] = FIL;
+
+  ck_assert_int_eq(LiCheckEnd(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LACheck1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LACheckEnd(), 0);
-  Destroy();
+
+  ck_assert_int_eq(LACheckEnd(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LACheck2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[4][5] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LACheckEnd(), 1);
-  Destroy();
+  new->field[4][5] = FIL;
+
+  ck_assert_int_eq(LACheckEnd(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RACheck1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(RACheckEnd(), 0);
-  Destroy();
+
+  ck_assert_int_eq(RACheckEnd(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RACheck2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftAngle;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftAngle;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[4][5] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(RACheckEnd(), 1);
-  Destroy();
+  new->field[4][5] = FIL;
+
+  ck_assert_int_eq(RACheckEnd(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZCheck1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LZCheckEnd(), 0);
-  Destroy();
+
+  ck_assert_int_eq(LZCheckEnd(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(LZCheck2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = LeftZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = LeftZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[4][6] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(LZCheckEnd(), 1);
-  Destroy();
+  new->field[4][6] = FIL;
+
+  ck_assert_int_eq(LZCheckEnd(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZCheck1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(RZCheckEnd(), 0);
-  Destroy();
+
+  ck_assert_int_eq(RZCheckEnd(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(RZCheck2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = RightZ;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = RightZ;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[4][5] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(RZCheckEnd(), 1);
-  Destroy();
+  new->field[4][5] = FIL;
+
+  ck_assert_int_eq(RZCheckEnd(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(SqCheck1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Square;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Square;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(SqCheckEnd(), 0);
-  Destroy();
+
+  ck_assert_int_eq(SqCheckEnd(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(SqCheck2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = Square;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = Square;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[4][5] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(SqCheckEnd(), 1);
-  Destroy();
+  new->field[4][5] = FIL;
+
+  ck_assert_int_eq(SqCheckEnd(new), 1);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TCheck1) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  uploadNewState(new, fig);
-  ck_assert_int_eq(TCheckEnd(), 0);
-  Destroy();
+
+  ck_assert_int_eq(TCheckEnd(new), 0);
+  Destroy(new);
 }
 END_TEST
 
 START_TEST(TCheck2) {
-  GameInfo_t new = Init();
-  Falling_t fig;
-  fig.type = T;
-  fig.posx = 5;
-  fig.posy = 5;
-  fig.rotation = 0;
-  StartGame();
+  GameInfo_t *new = updateCurrentState();
+  StartGame(new);
+
+  new->piece.type = T;
+  new->piece.posx = 5;
+  new->piece.posy = 5;
+  new->piece.rotation = 0;
   new = updateCurrentState();
-  new.field[4][5] = FIL;
-  uploadNewState(new, fig);
-  ck_assert_int_eq(TCheckEnd(), 1);
-  Destroy();
+  new->field[4][5] = FIL;
+
+  ck_assert_int_eq(TCheckEnd(new), 1);
+  Destroy(new);
 }
 END_TEST
 

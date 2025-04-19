@@ -3,7 +3,7 @@
 #include <ncurses.h>
 
 int main() {
-  GameInfo_t game = Init();
+  GameInfo_t *game = updateCurrentState();
   unsigned short time = 0;
   char run = 1;
   int input = 0;
@@ -18,28 +18,28 @@ int main() {
     input = getch();
     act = parceInput(&input);
     game = updateCurrentState();
-    if (game.pause == 2) {
+    if (game->pause == 2) {
       clear();
-      StartingScreen(game);
+      StartingScreen(*game);
       if (act == Terminate) run = 0;
-      if (act == Start) StartGame();
-    } else if (game.pause == 3) {
+      if (act == Start) StartGame(game);
+    } else if (game->pause == 3) {
       clear();
-      EndGameScreen(game);
+      EndGameScreen(*game);
       if (act == Terminate) run = 0;
-      if (act == Start) StartGame();
-    } else if (game.pause == 4) {
+      if (act == Start) StartGame(game);
+    } else if (game->pause == 4) {
       run = 0;
     } else {
       userInput(act, 0);
       clear();
       game = updateCurrentState();
-      UpdateGameScreen(game);
+      UpdateGameScreen(*game);
     }
-    if (game.pause == 0) time++;
-    if (time >= game.speed) {
-      MoveDown();
-      Connect();
+    if (game->pause == 0) time++;
+    if (time >= game->speed) {
+      MoveDown(game);
+      Connect(game);
       time = 0;
     }
     refresh();
@@ -47,7 +47,7 @@ int main() {
   }
 
   endwin();
-  Destroy();
+  Destroy(game);
 
   return 0;
 }

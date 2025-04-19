@@ -1,21 +1,18 @@
 #include "library.h"
 
-static GameInfo_t tetris;
-static Falling_t piece;
-static unsigned rnd = 0;
-
-GameInfo_t Init() {
-  tetris.level = 0;
-  tetris.speed = 50;  // For 50 ms framerate
-  tetris.field = (char **)malloc(HEI * sizeof(char *));
-  if (tetris.field == NULL) {
-    tetris.pause = 4;
+GameInfo_t *Init(GameInfo_t *tetris) {
+  tetris = (GameInfo_t *)malloc(sizeof(GameInfo_t));
+  tetris->level = 0;
+  tetris->speed = 50;  // For 50 ms framerate
+  tetris->field = (char **)malloc(HEI * sizeof(char *));
+  if (tetris->field == NULL) {
+    tetris->pause = 4;
     return tetris;
   } else {
     for (int i = 0; i < HEI; ++i) {
-      tetris.field[i] = (char *)calloc(WID + 1, sizeof(char));
-      if (tetris.field[i] == NULL) {
-        tetris.pause = 4;
+      tetris->field[i] = (char *)calloc(WID + 1, sizeof(char));
+      if (tetris->field[i] == NULL) {
+        tetris->pause = 4;
         return tetris;
       }
     }
@@ -23,1028 +20,1077 @@ GameInfo_t Init() {
   FILE *sc;
   sc = fopen("Score.dat", "r");
   if (sc == NULL)
-    tetris.high_score = 0;
+    tetris->high_score = 0;
   else
-    fscanf(sc, "%u", &tetris.high_score);
+    fscanf(sc, "%u", &(tetris->high_score));
   if (sc != NULL) fclose(sc);
-  tetris.pause = 2;
+  tetris->pause = 2;
   return tetris;
 }
 
-void Destroy() {
-  if (tetris.field != NULL) {
+void Destroy(GameInfo_t *tetris) {
+  if (tetris->field != NULL) {
     for (int i = 0; i < HEI; ++i) {
-      if (tetris.field[i] != NULL) {
-        free(tetris.field[i]);
+      if (tetris->field[i] != NULL) {
+        free(tetris->field[i]);
       } else
         i = HEI;
     }
-    free(tetris.field);
+    free(tetris->field);
   }
+  free(tetris);
 }
 
-GameInfo_t updateCurrentState() { return tetris; }
-
-Falling_t getPiece() { return piece; }
-
-void uploadNewState(GameInfo_t state, Falling_t fig) {
-  tetris = state;
-  piece = fig;
+GameInfo_t *updateCurrentState() {
+  static GameInfo_t *tetris = NULL;
+  if (tetris == NULL) tetris = Init(tetris);
+  return tetris;
 }
 
 void userInput(UserAction_t action, char hold) {
+  GameInfo_t *tetris = updateCurrentState();
   if (hold == 0) {
-    if (action == Start && (tetris.pause == 2 || tetris.pause == 3))
-      StartGame();
-    else if (action == Pause && tetris.pause < 2)
-      PauseResume();
-    else if (action == Terminate && tetris.pause != 3)
-      EndGame();
-    else if (tetris.pause == 0) {
+    if (action == Start && (tetris->pause == 2 || tetris->pause == 3))
+      StartGame(tetris);
+    else if (action == Pause && tetris->pause < 2)
+      PauseResume(tetris);
+    else if (action == Terminate && tetris->pause != 3)
+      EndGame(tetris);
+    else if (tetris->pause == 0) {
       if (action == Left)
-        ShiftLeft();
+        ShiftLeft(tetris);
       else if (action == Right)
-        ShiftRight();
+        ShiftRight(tetris);
       else if (action == Down)
-        Drop();
+        Drop(tetris);
       else if (action == Action)
-        Rotate();
+        Rotate(tetris);
     }
   }
 }
 
-void StartGame() {
-  if (tetris.pause != 4) {
+void StartGame(GameInfo_t *tetris) {
+  if (tetris->pause != 4) {
     for (int i = 0; i < WID; ++i)
-      for (int j = 0; j < HEI; ++j) tetris.field[j][i] = EMP;
-    GenerateNext();
-    Spawn();
-    GenerateNext();
-    tetris.score = 0;
-    tetris.pause = 0;
+      for (int j = 0; j < HEI; ++j) tetris->field[j][i] = EMP;
+    GenerateNext(tetris);
+    Spawn(tetris);
+    GenerateNext(tetris);
+    tetris->score = 0;
+    tetris->pause = 0;
   }
 }
 
-void PauseResume() {
-  if (tetris.pause == 0)
-    tetris.pause = 1;
+void PauseResume(GameInfo_t *tetris) {
+  if (tetris->pause == 0)
+    tetris->pause = 1;
   else
-    tetris.pause = 0;
+    tetris->pause = 0;
 }
 
-void EndGame() {
-  tetris.pause = 3;
+void EndGame(GameInfo_t *tetris) {
+  tetris->pause = 3;
   FILE *sc;
   sc = fopen("Score.dat", "w");
-  fprintf(sc, "%u", tetris.high_score);
+  fprintf(sc, "%u", tetris->high_score);
   fclose(sc);
-  tetris.score = 0;
+  tetris->score = 0;
 }
 
-void ShiftLeft() {
-  if (piece.type == Line)
-    LiShiftLeft();
-  else if (piece.type == LeftAngle)
-    LAShiftLeft();
-  else if (piece.type == RightAngle)
-    RAShiftLeft();
-  else if (piece.type == LeftZ)
-    LZShiftLeft();
-  else if (piece.type == RightZ)
-    RZShiftLeft();
-  else if (piece.type == Square)
-    SqShiftLeft();
+void ShiftLeft(GameInfo_t *tetris) {
+  if (tetris->piece.type == Line)
+    LiShiftLeft(tetris);
+  else if (tetris->piece.type == LeftAngle)
+    LAShiftLeft(tetris);
+  else if (tetris->piece.type == RightAngle)
+    RAShiftLeft(tetris);
+  else if (tetris->piece.type == LeftZ)
+    LZShiftLeft(tetris);
+  else if (tetris->piece.type == RightZ)
+    RZShiftLeft(tetris);
+  else if (tetris->piece.type == Square)
+    SqShiftLeft(tetris);
   else
-    TShiftLeft();
-  PutPiece();
-  Connect();
+    TShiftLeft(tetris);
+  PutPiece(tetris);
+  Connect(tetris);
 }
 
-void ShiftRight() {
-  if (piece.type == Line)
-    LiShiftRight();
-  else if (piece.type == LeftAngle)
-    LAShiftRight();
-  else if (piece.type == RightAngle)
-    RAShiftRight();
-  else if (piece.type == LeftZ)
-    LZShiftRight();
-  else if (piece.type == RightZ)
-    RZShiftRight();
-  else if (piece.type == Square)
-    SqShiftRight();
+void ShiftRight(GameInfo_t *tetris) {
+  if (tetris->piece.type == Line)
+    LiShiftRight(tetris);
+  else if (tetris->piece.type == LeftAngle)
+    LAShiftRight(tetris);
+  else if (tetris->piece.type == RightAngle)
+    RAShiftRight(tetris);
+  else if (tetris->piece.type == LeftZ)
+    LZShiftRight(tetris);
+  else if (tetris->piece.type == RightZ)
+    RZShiftRight(tetris);
+  else if (tetris->piece.type == Square)
+    SqShiftRight(tetris);
   else
-    TShiftRight();
-  PutPiece();
-  Connect();
+    TShiftRight(tetris);
+  PutPiece(tetris);
+  Connect(tetris);
 }
 
-void Rotate() {
-  if (piece.type == Line)
-    LiRotate();
-  else if (piece.type == LeftAngle)
-    LARotate();
-  else if (piece.type == RightAngle)
-    RARotate();
-  else if (piece.type == LeftZ)
-    LZRotate();
-  else if (piece.type == RightZ)
-    RZRotate();
-  else if (piece.type == T)
-    TRotate();
-  PutPiece();
-  Connect();
+void Rotate(GameInfo_t *tetris) {
+  if (tetris->piece.type == Line)
+    LiRotate(tetris);
+  else if (tetris->piece.type == LeftAngle)
+    LARotate(tetris);
+  else if (tetris->piece.type == RightAngle)
+    RARotate(tetris);
+  else if (tetris->piece.type == LeftZ)
+    LZRotate(tetris);
+  else if (tetris->piece.type == RightZ)
+    RZRotate(tetris);
+  else if (tetris->piece.type == T)
+    TRotate(tetris);
+  PutPiece(tetris);
+  Connect(tetris);
 }
 
-void PutPiece() {
-  if (piece.type == Line)
-    PutLine();
-  else if (piece.type == LeftAngle)
-    PutLA();
-  else if (piece.type == RightAngle)
-    PutRA();
-  else if (piece.type == LeftZ)
-    PutLZ();
-  else if (piece.type == RightZ)
-    PutRZ();
-  else if (piece.type == Square)
-    PutSquare();
+void PutPiece(GameInfo_t *tetris) {
+  if (tetris->piece.type == Line)
+    PutLine(tetris);
+  else if (tetris->piece.type == LeftAngle)
+    PutLA(tetris);
+  else if (tetris->piece.type == RightAngle)
+    PutRA(tetris);
+  else if (tetris->piece.type == LeftZ)
+    PutLZ(tetris);
+  else if (tetris->piece.type == RightZ)
+    PutRZ(tetris);
+  else if (tetris->piece.type == Square)
+    PutSquare(tetris);
   else
-    PutT();
+    PutT(tetris);
 }
 
-void CleanPiece() {
-  if (piece.type == Line)
-    CleanLine();
-  else if (piece.type == LeftAngle)
-    CleanLA();
-  else if (piece.type == RightAngle)
-    CleanRA();
-  else if (piece.type == LeftZ)
-    CleanLZ();
-  else if (piece.type == RightZ)
-    CleanRZ();
-  else if (piece.type == Square)
-    CleanSquare();
+void CleanPiece(GameInfo_t *tetris) {
+  if (tetris->piece.type == Line)
+    CleanLine(tetris);
+  else if (tetris->piece.type == LeftAngle)
+    CleanLA(tetris);
+  else if (tetris->piece.type == RightAngle)
+    CleanRA(tetris);
+  else if (tetris->piece.type == LeftZ)
+    CleanLZ(tetris);
+  else if (tetris->piece.type == RightZ)
+    CleanRZ(tetris);
+  else if (tetris->piece.type == Square)
+    CleanSquare(tetris);
   else
-    CleanT();
+    CleanT(tetris);
 }
 
-void Drop() {
-  while (Connect() != 1) MoveDown();
+void Drop(GameInfo_t *tetris) {
+  while (Connect(tetris) != 1) MoveDown(tetris);
 }
 
-void MoveDown() {
-  CleanPiece();
-  MovePiece(0, -1);
-  PutPiece();
+void MoveDown(GameInfo_t *tetris) {
+  CleanPiece(tetris);
+  MovePiece(0, -1, tetris);
+  PutPiece(tetris);
 }
 
-void GenerateNext() {
+void GenerateNext(GameInfo_t *tetris) {
   unsigned seed = time(0);
+  static unsigned rnd = 0;
   if (MAXU - seed < rnd) seed = MAXU - seed;
   seed += rnd;
   rnd++;
-  tetris.next = rand_r(&seed) % 7;
+  tetris->next = rand_r(&seed) % 7;
 }
 
-void Spawn() {
-  piece.type = tetris.next;
-  piece.posx = WID / 2;
-  piece.posy = HEI - 1;
-  piece.rotation = 0;
-  if (CheckEnd() == 0) {
-    PutPiece();
-    Connect();
+void Spawn(GameInfo_t *tetris) {
+  tetris->piece.type = tetris->next;
+  tetris->piece.posx = WID / 2;
+  tetris->piece.posy = HEI - 1;
+  tetris->piece.rotation = 0;
+  if (CheckEnd(tetris) == 0) {
+    PutPiece(tetris);
+    Connect(tetris);
   } else
-    EndGame();
+    EndGame(tetris);
 }
 
-char Connect() {
+char Connect(GameInfo_t *tetris) {
   char result;
-  if (piece.type == Line)
-    result = LiConnect();
-  else if (piece.type == LeftAngle)
-    result = LAConnect();
-  else if (piece.type == RightAngle)
-    result = RAConnect();
-  else if (piece.type == LeftZ)
-    result = LZConnect();
-  else if (piece.type == RightZ)
-    result = RZConnect();
-  else if (piece.type == Square)
-    result = SqConnect();
+  if (tetris->piece.type == Line)
+    result = LiConnect(tetris);
+  else if (tetris->piece.type == LeftAngle)
+    result = LAConnect(tetris);
+  else if (tetris->piece.type == RightAngle)
+    result = RAConnect(tetris);
+  else if (tetris->piece.type == LeftZ)
+    result = LZConnect(tetris);
+  else if (tetris->piece.type == RightZ)
+    result = RZConnect(tetris);
+  else if (tetris->piece.type == Square)
+    result = SqConnect(tetris);
   else
-    result = TConnect();
+    result = TConnect(tetris);
   if (result == 1) {
-    CheckApplyScore();
-    Spawn();
-    GenerateNext();
+    CheckApplyScore(tetris);
+    Spawn(tetris);
+    GenerateNext(tetris);
   }
   return result;
 }
 
-char CheckEnd() {
+char CheckEnd(GameInfo_t *tetris) {
   char result;
-  if (piece.type == Line)
-    result = LiCheckEnd();
-  else if (piece.type == LeftAngle)
-    result = LACheckEnd();
-  else if (piece.type == RightAngle)
-    result = RACheckEnd();
-  else if (piece.type == LeftZ)
-    result = LZCheckEnd();
-  else if (piece.type == RightZ)
-    result = RZCheckEnd();
-  else if (piece.type == Square)
-    result = SqCheckEnd();
+  if (tetris->piece.type == Line)
+    result = LiCheckEnd(tetris);
+  else if (tetris->piece.type == LeftAngle)
+    result = LACheckEnd(tetris);
+  else if (tetris->piece.type == RightAngle)
+    result = RACheckEnd(tetris);
+  else if (tetris->piece.type == LeftZ)
+    result = LZCheckEnd(tetris);
+  else if (tetris->piece.type == RightZ)
+    result = RZCheckEnd(tetris);
+  else if (tetris->piece.type == Square)
+    result = SqCheckEnd(tetris);
   else
-    result = TCheckEnd();
+    result = TCheckEnd(tetris);
   return result;
 }
 
-void MovePiece(char x, char y) {
-  piece.posx += x;
-  piece.posy += y;
+void MovePiece(char x, char y, GameInfo_t *tetris) {
+  tetris->piece.posx += x;
+  tetris->piece.posy += y;
 }
 
-void CheckApplyScore() {
+void CheckApplyScore(GameInfo_t *tetris) {
   char filling = 0, scored = 0, top = HEI;
   for (int y = 0; y < top; ++y) {
     for (int x = 0; x < WID; ++x) {
-      if (tetris.field[y][x] == FIL) filling++;
+      if (tetris->field[y][x] == FIL) filling++;
     }
     if (filling == 10) {
-      RemoveRow(y);
+      RemoveRow(y, tetris);
       scored++;
       y--;
       top--;
     }
     filling = 0;
   }
-  if (scored == 1) tetris.score += 100;
-  if (scored == 2) tetris.score += 300;
-  if (scored == 3) tetris.score += 700;
-  if (scored == 4) tetris.score += 1500;
-  if (tetris.score > tetris.high_score) tetris.high_score = tetris.score;
-  updateLevel();
+  if (scored == 1) tetris->score += 100;
+  if (scored == 2) tetris->score += 300;
+  if (scored == 3) tetris->score += 700;
+  if (scored == 4) tetris->score += 1500;
+  if (tetris->score > tetris->high_score) tetris->high_score = tetris->score;
+  updateLevel(tetris);
 }
 
-void updateLevel() {
-  tetris.level = tetris.score / 600;
-  if (tetris.level > 9) tetris.level = 9;
-  tetris.speed = 50 - 5 * tetris.level;
+void updateLevel(GameInfo_t *tetris) {
+  tetris->level = tetris->score / 600;
+  if (tetris->level > 9) tetris->level = 9;
+  tetris->speed = 50 - 5 * tetris->level;
 }
 
-void RemoveRow(char r) {
+void RemoveRow(char r, GameInfo_t *tetris) {
   for (int y = r; y < HEI - 2; ++y) {
     for (int x = 0; x < WID; ++x) {
-      tetris.field[y][x] = tetris.field[y + 1][x];
+      tetris->field[y][x] = tetris->field[y + 1][x];
     }
   }
   for (int x = 0; x < WID; ++x) {
-    tetris.field[HEI - 1][x] = EMP;
+    tetris->field[HEI - 1][x] = EMP;
   }
 }
 
-void LiShiftLeft() {
-  if (piece.posx != 0)
-    if ((tetris.field[piece.posy][piece.posx - 1] == EMP) &&
-        ((piece.rotation == 1) ||
-         ((tetris.field[piece.posy - 1][piece.posx - 1] == EMP) &&
-          (tetris.field[piece.posy - 2][piece.posx - 1] == EMP) &&
-          (tetris.field[piece.posy - 3][piece.posx - 1] == EMP)))) {
-      CleanLine();
-      MovePiece(-1, 0);
+void LiShiftLeft(GameInfo_t *tetris) {
+  if (tetris->piece.posx != 0)
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx - 1] == EMP) &&
+        ((tetris->piece.rotation == 1) ||
+         ((tetris->field[tetris->piece.posy - 1][tetris->piece.posx - 1] ==
+           EMP) &&
+          (tetris->field[tetris->piece.posy - 2][tetris->piece.posx - 1] ==
+           EMP) &&
+          (tetris->field[tetris->piece.posy - 3][tetris->piece.posx - 1] ==
+           EMP)))) {
+      CleanLine(tetris);
+      MovePiece(-1, 0, tetris);
     }
 }
 
-void LAShiftLeft() {
-  if (piece.posx != 0)
-    if ((((piece.rotation < 3) &&
-          (tetris.field[piece.posy][piece.posx - 1] == EMP)) ||
-         ((tetris.field[piece.posy][piece.posx] == EMP))) &&
-        (((piece.rotation < 2) &&
-          (tetris.field[piece.posy - 1][piece.posx - 1] == EMP)) ||
-         (piece.rotation == 2) ||
-         ((piece.rotation == 3) &&
-          (tetris.field[piece.posy - 1][piece.posx] == EMP))) &&
-        ((piece.rotation % 2 == 0) ||
-         (tetris.field[piece.posy - 2][piece.posx - 1] == EMP))) {
-      CleanLA();
-      MovePiece(-1, 0);
+void LAShiftLeft(GameInfo_t *tetris) {
+  if (tetris->piece.posx != 0)
+    if ((((tetris->piece.rotation < 3) &&
+          (tetris->field[tetris->piece.posy][tetris->piece.posx - 1] == EMP)) ||
+         ((tetris->field[tetris->piece.posy][tetris->piece.posx] == EMP))) &&
+        (((tetris->piece.rotation < 2) &&
+          (tetris->field[tetris->piece.posy - 1][tetris->piece.posx - 1] ==
+           EMP)) ||
+         (tetris->piece.rotation == 2) ||
+         ((tetris->piece.rotation == 3) &&
+          (tetris->field[tetris->piece.posy - 1][tetris->piece.posx] ==
+           EMP))) &&
+        ((tetris->piece.rotation % 2 == 0) ||
+         (tetris->field[tetris->piece.posy - 2][tetris->piece.posx - 1] ==
+          EMP))) {
+      CleanLA(tetris);
+      MovePiece(-1, 0, tetris);
     }
 }
 
-void RAShiftLeft() {
-  if (piece.posx != 0)
-    if ((((piece.rotation > 0) &&
-          (tetris.field[piece.posy][piece.posx - 1] == EMP)) ||
-         ((piece.rotation == 0) &&
-          (tetris.field[piece.posy][piece.posx + 1] == EMP))) &&
-        (((piece.rotation < 3) &&
-          (tetris.field[piece.posy - 1][piece.posx - 1] == EMP)) ||
-         (tetris.field[piece.posy - 1][piece.posx] == EMP)) &&
-        ((piece.rotation % 2 == 0) ||
-         ((piece.rotation == 1) &&
-          (tetris.field[piece.posy - 2][piece.posx - 1] == EMP)) ||
-         (tetris.field[piece.posy - 2][piece.posx] == EMP))) {
-      CleanRA();
-      MovePiece(-1, 0);
+void RAShiftLeft(GameInfo_t *tetris) {
+  if (tetris->piece.posx != 0)
+    if ((((tetris->piece.rotation > 0) &&
+          (tetris->field[tetris->piece.posy][tetris->piece.posx - 1] == EMP)) ||
+         ((tetris->piece.rotation == 0) &&
+          (tetris->field[tetris->piece.posy][tetris->piece.posx + 1] ==
+           EMP))) &&
+        (((tetris->piece.rotation < 3) &&
+          (tetris->field[tetris->piece.posy - 1][tetris->piece.posx - 1] ==
+           EMP)) ||
+         (tetris->field[tetris->piece.posy - 1][tetris->piece.posx] == EMP)) &&
+        ((tetris->piece.rotation % 2 == 0) ||
+         ((tetris->piece.rotation == 1) &&
+          (tetris->field[tetris->piece.posy - 2][tetris->piece.posx - 1] ==
+           EMP)) ||
+         (tetris->field[tetris->piece.posy - 2][tetris->piece.posx] == EMP))) {
+      CleanRA(tetris);
+      MovePiece(-1, 0, tetris);
     }
 }
 
-void LZShiftLeft() {
-  if (piece.posx != 0)
-    if ((((piece.rotation == 0) &&
-          (tetris.field[piece.posy][piece.posx - 1] == EMP)) ||
-         (tetris.field[piece.posy][piece.posx] == EMP)) &&
-        ((piece.rotation == 0) ||
-         (tetris.field[piece.posy - 1][piece.posx - 1] == EMP)) &&
-        ((piece.rotation == 0) ||
-         (tetris.field[piece.posy - 2][piece.posx - 1] == EMP))) {
-      CleanLZ();
-      MovePiece(-1, 0);
+void LZShiftLeft(GameInfo_t *tetris) {
+  if (tetris->piece.posx != 0)
+    if ((((tetris->piece.rotation == 0) &&
+          (tetris->field[tetris->piece.posy][tetris->piece.posx - 1] == EMP)) ||
+         (tetris->field[tetris->piece.posy][tetris->piece.posx] == EMP)) &&
+        ((tetris->piece.rotation == 0) ||
+         (tetris->field[tetris->piece.posy - 1][tetris->piece.posx - 1] ==
+          EMP)) &&
+        ((tetris->piece.rotation == 0) ||
+         (tetris->field[tetris->piece.posy - 2][tetris->piece.posx - 1] ==
+          EMP))) {
+      CleanLZ(tetris);
+      MovePiece(-1, 0, tetris);
     }
 }
 
-void RZShiftLeft() {
-  if (piece.posx != 0)
-    if ((((piece.rotation == 1) &&
-          (tetris.field[piece.posy][piece.posx - 1] == EMP)) ||
-         (tetris.field[piece.posy][piece.posx] == EMP)) &&
-        (tetris.field[piece.posy - 1][piece.posx - 1] == EMP)) {
-      CleanRZ();
-      MovePiece(-1, 0);
+void RZShiftLeft(GameInfo_t *tetris) {
+  if (tetris->piece.posx != 0)
+    if ((((tetris->piece.rotation == 1) &&
+          (tetris->field[tetris->piece.posy][tetris->piece.posx - 1] == EMP)) ||
+         (tetris->field[tetris->piece.posy][tetris->piece.posx] == EMP)) &&
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx - 1] ==
+         EMP)) {
+      CleanRZ(tetris);
+      MovePiece(-1, 0, tetris);
     }
 }
 
-void SqShiftLeft() {
-  if (piece.posx != 0)
-    if ((tetris.field[piece.posy][piece.posx - 1] == EMP) &&
-        (tetris.field[piece.posy - 1][piece.posx - 1] == EMP)) {
-      CleanSquare();
-      MovePiece(-1, 0);
+void SqShiftLeft(GameInfo_t *tetris) {
+  if (tetris->piece.posx != 0)
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx - 1] == EMP) &&
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx - 1] ==
+         EMP)) {
+      CleanSquare(tetris);
+      MovePiece(-1, 0, tetris);
     }
 }
 
-void TShiftLeft() {
-  if (piece.posx != 0)
-    if ((((piece.rotation > 1) &&
-          (tetris.field[piece.posy][piece.posx - 1] == EMP)) ||
-         (tetris.field[piece.posy][piece.posx] == EMP)) &&
-        ((piece.rotation == 2) ||
-         (tetris.field[piece.posy - 1][piece.posx - 1] == EMP)) &&
-        ((piece.rotation % 2 == 0) ||
-         ((piece.rotation == 1) ||
-          (tetris.field[piece.posy - 2][piece.posx - 1] == EMP)))) {
-      CleanT();
-      MovePiece(-1, 0);
+void TShiftLeft(GameInfo_t *tetris) {
+  if (tetris->piece.posx != 0)
+    if ((((tetris->piece.rotation > 1) &&
+          (tetris->field[tetris->piece.posy][tetris->piece.posx - 1] == EMP)) ||
+         (tetris->field[tetris->piece.posy][tetris->piece.posx] == EMP)) &&
+        ((tetris->piece.rotation == 2) ||
+         (tetris->field[tetris->piece.posy - 1][tetris->piece.posx - 1] ==
+          EMP)) &&
+        ((tetris->piece.rotation % 2 == 0) ||
+         ((tetris->piece.rotation == 1) ||
+          (tetris->field[tetris->piece.posy - 2][tetris->piece.posx - 1] ==
+           EMP)))) {
+      CleanT(tetris);
+      MovePiece(-1, 0, tetris);
     }
 }
 
-void LiShiftRight() {
-  CleanLine();
-  if ((piece.rotation == 0) && (piece.posx != 9)) {
-    if ((tetris.field[piece.posy][piece.posx + 1] == EMP) &&
-        (tetris.field[piece.posy - 1][piece.posx + 1] == EMP) &&
-        (tetris.field[piece.posy - 2][piece.posx + 1] == EMP) &&
-        (tetris.field[piece.posy - 3][piece.posx + 1] == EMP))
-      MovePiece(1, 0);
-  } else if (piece.posx < 6)
-    if (tetris.field[piece.posy][piece.posx + 4] == EMP) MovePiece(1, 0);
+void LiShiftRight(GameInfo_t *tetris) {
+  CleanLine(tetris);
+  if ((tetris->piece.rotation == 0) && (tetris->piece.posx != 9)) {
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx + 1] == EMP) &&
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] ==
+         EMP) &&
+        (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] ==
+         EMP) &&
+        (tetris->field[tetris->piece.posy - 3][tetris->piece.posx + 1] == EMP))
+      MovePiece(1, 0, tetris);
+  } else if (tetris->piece.posx < 6)
+    if (tetris->field[tetris->piece.posy][tetris->piece.posx + 4] == EMP)
+      MovePiece(1, 0, tetris);
 }
 
-void LAShiftRight() {
-  CleanLA();
-  if ((piece.rotation % 2 == 0) && (piece.posx < 7)) {
-    if ((((piece.rotation == 0) &&
-          (tetris.field[piece.posy][piece.posx + 1] == EMP)) ||
-         ((piece.rotation == 2) &&
-          (tetris.field[piece.posy][piece.posx + 3] == EMP))) &&
-        (tetris.field[piece.posy - 1][piece.posx + 3] == EMP))
-      MovePiece(1, 0);
-  } else if ((piece.rotation % 2 == 1) && (piece.posx < 8))
-    if ((tetris.field[piece.posy][piece.posx + 2] == EMP) &&
-        (((piece.rotation == 1) &&
-          (tetris.field[piece.posy - 2][piece.posx + 1] == EMP)) ||
-         ((piece.rotation == 3) &&
-          ((tetris.field[piece.posy - 1][piece.posx + 2] == EMP) &&
-           (tetris.field[piece.posy - 2][piece.posx + 2] == EMP)))))
-      MovePiece(1, 0);
+void LAShiftRight(GameInfo_t *tetris) {
+  CleanLA(tetris);
+  if ((tetris->piece.rotation % 2 == 0) && (tetris->piece.posx < 7)) {
+    if ((((tetris->piece.rotation == 0) &&
+          (tetris->field[tetris->piece.posy][tetris->piece.posx + 1] == EMP)) ||
+         ((tetris->piece.rotation == 2) &&
+          (tetris->field[tetris->piece.posy][tetris->piece.posx + 3] ==
+           EMP))) &&
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 3] == EMP))
+      MovePiece(1, 0, tetris);
+  } else if ((tetris->piece.rotation % 2 == 1) && (tetris->piece.posx < 8))
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx + 2] == EMP) &&
+        (((tetris->piece.rotation == 1) &&
+          (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] ==
+           EMP)) ||
+         ((tetris->piece.rotation == 3) &&
+          ((tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] ==
+            EMP) &&
+           (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 2] ==
+            EMP)))))
+      MovePiece(1, 0, tetris);
 }
 
-void RAShiftRight() {
-  CleanRA();
-  if ((piece.rotation % 2 == 0) && (piece.posx < 7)) {
-    if ((tetris.field[piece.posy][piece.posx + 3] == EMP) &&
-        (((piece.rotation == 0) &&
-          (tetris.field[piece.posy - 1][piece.posx + 3] == EMP)) ||
-         (piece.rotation == 2)))
-      MovePiece(1, 0);
-  } else if ((piece.rotation % 2 == 1) && (piece.posx < 8))
-    if ((((piece.rotation == 1) &&
-          ((tetris.field[piece.posy][piece.posx + 1] == EMP) &&
-           (tetris.field[piece.posy - 1][piece.posx + 1] == EMP))) ||
-         ((piece.rotation == 3) &&
-          ((tetris.field[piece.posy][piece.posx + 2] == EMP) &&
-           (tetris.field[piece.posy - 1][piece.posx + 2] == EMP)))) &&
-        (tetris.field[piece.posy - 2][piece.posx + 2] == EMP))
-      MovePiece(1, 0);
+void RAShiftRight(GameInfo_t *tetris) {
+  CleanRA(tetris);
+  if ((tetris->piece.rotation % 2 == 0) && (tetris->piece.posx < 7)) {
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx + 3] == EMP) &&
+        (((tetris->piece.rotation == 0) &&
+          (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 3] ==
+           EMP)) ||
+         (tetris->piece.rotation == 2)))
+      MovePiece(1, 0, tetris);
+  } else if ((tetris->piece.rotation % 2 == 1) && (tetris->piece.posx < 8))
+    if ((((tetris->piece.rotation == 1) &&
+          ((tetris->field[tetris->piece.posy][tetris->piece.posx + 1] == EMP) &&
+           (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] ==
+            EMP))) ||
+         ((tetris->piece.rotation == 3) &&
+          ((tetris->field[tetris->piece.posy][tetris->piece.posx + 2] == EMP) &&
+           (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] ==
+            EMP)))) &&
+        (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 2] == EMP))
+      MovePiece(1, 0, tetris);
 }
 
-void LZShiftRight() {
-  CleanLZ();
-  if ((piece.rotation == 0) && (piece.posx < 7)) {
-    if ((tetris.field[piece.posy][piece.posx + 2] == EMP) &&
-        (tetris.field[piece.posy - 1][piece.posx + 3] == EMP))
-      MovePiece(1, 0);
-  } else if ((piece.rotation == 1) && (piece.posx < 8))
-    if ((tetris.field[piece.posy][piece.posx + 2] == EMP) &&
-        (tetris.field[piece.posy - 1][piece.posx + 2] == EMP))
-      MovePiece(1, 0);
+void LZShiftRight(GameInfo_t *tetris) {
+  CleanLZ(tetris);
+  if ((tetris->piece.rotation == 0) && (tetris->piece.posx < 7)) {
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx + 2] == EMP) &&
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 3] == EMP))
+      MovePiece(1, 0, tetris);
+  } else if ((tetris->piece.rotation == 1) && (tetris->piece.posx < 8))
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx + 2] == EMP) &&
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] == EMP))
+      MovePiece(1, 0, tetris);
 }
 
-void RZShiftRight() {
-  CleanRZ();
-  if ((piece.rotation == 0) && (piece.posx < 7)) {
-    if (tetris.field[piece.posy][piece.posx + 3] == EMP) MovePiece(1, 0);
-  } else if ((piece.rotation == 1) && (piece.posx < 8))
-    if ((tetris.field[piece.posy][piece.posx + 1] == EMP) &&
-        (tetris.field[piece.posy - 1][piece.posx + 2] == EMP) &&
-        (tetris.field[piece.posy - 2][piece.posx + 2] == EMP))
-      MovePiece(1, 0);
+void RZShiftRight(GameInfo_t *tetris) {
+  CleanRZ(tetris);
+  if ((tetris->piece.rotation == 0) && (tetris->piece.posx < 7)) {
+    if (tetris->field[tetris->piece.posy][tetris->piece.posx + 3] == EMP)
+      MovePiece(1, 0, tetris);
+  } else if ((tetris->piece.rotation == 1) && (tetris->piece.posx < 8))
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx + 1] == EMP) &&
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] ==
+         EMP) &&
+        (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 2] == EMP))
+      MovePiece(1, 0, tetris);
 }
 
-void SqShiftRight() {
-  CleanSquare();
-  if (piece.posx < 8)
-    if ((tetris.field[piece.posy][piece.posx + 2] == EMP) &&
-        (tetris.field[piece.posy - 1][piece.posx + 2] == EMP)) {
-      MovePiece(1, 0);
+void SqShiftRight(GameInfo_t *tetris) {
+  CleanSquare(tetris);
+  if (tetris->piece.posx < 8)
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx + 2] == EMP) &&
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] ==
+         EMP)) {
+      MovePiece(1, 0, tetris);
     }
 }
 
-void TShiftRight() {
-  CleanT();
-  if ((piece.rotation % 2 == 0) && (piece.posx < 7)) {
-    if ((((piece.rotation == 0) &&
-          (tetris.field[piece.posy][piece.posx + 2] == EMP)) ||
-         ((piece.rotation == 2) &&
-          (tetris.field[piece.posy][piece.posx + 3] == EMP))) &&
-        (((piece.rotation == 0) &&
-          (tetris.field[piece.posy - 1][piece.posx + 3] == EMP)) ||
-         (piece.rotation == 2)))
-      MovePiece(1, 0);
-  } else if ((piece.rotation % 2 == 1) && (piece.posx < 8))
-    if ((((piece.rotation == 1) &&
-          (tetris.field[piece.posy][piece.posx + 2] == EMP) &&
-          (tetris.field[piece.posy - 2][piece.posx + 2] == EMP)) ||
-         ((piece.rotation == 3) &&
-          (tetris.field[piece.posy][piece.posx + 1] == EMP))) &&
-        (tetris.field[piece.posy - 1][piece.posx + 2] == EMP))
-      MovePiece(1, 0);
+void TShiftRight(GameInfo_t *tetris) {
+  CleanT(tetris);
+  if ((tetris->piece.rotation % 2 == 0) && (tetris->piece.posx < 7)) {
+    if ((((tetris->piece.rotation == 0) &&
+          (tetris->field[tetris->piece.posy][tetris->piece.posx + 2] == EMP)) ||
+         ((tetris->piece.rotation == 2) &&
+          (tetris->field[tetris->piece.posy][tetris->piece.posx + 3] ==
+           EMP))) &&
+        (((tetris->piece.rotation == 0) &&
+          (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 3] ==
+           EMP)) ||
+         (tetris->piece.rotation == 2)))
+      MovePiece(1, 0, tetris);
+  } else if ((tetris->piece.rotation % 2 == 1) && (tetris->piece.posx < 8))
+    if ((((tetris->piece.rotation == 1) &&
+          (tetris->field[tetris->piece.posy][tetris->piece.posx + 2] == EMP) &&
+          (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 2] ==
+           EMP)) ||
+         ((tetris->piece.rotation == 3) &&
+          (tetris->field[tetris->piece.posy][tetris->piece.posx + 1] ==
+           EMP))) &&
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] == EMP))
+      MovePiece(1, 0, tetris);
 }
 
-void LiRotate() {
-  CleanLine();
-  if ((piece.rotation == 0) && (piece.posx <= 6)) {
-    if ((tetris.field[piece.posy][piece.posx + 1] == EMP) &&
-        (tetris.field[piece.posy][piece.posx + 2] == EMP) &&
-        (tetris.field[piece.posy][piece.posx + 3] == EMP))
-      piece.rotation = 1;
-  } else if ((piece.rotation == 1) && (piece.posy >= 3))
-    if ((tetris.field[piece.posy - 1][piece.posx] == EMP) &&
-        (tetris.field[piece.posy - 2][piece.posx] == EMP) &&
-        (tetris.field[piece.posy - 3][piece.posx] == EMP))
-      piece.rotation = 0;
+void LiRotate(GameInfo_t *tetris) {
+  CleanLine(tetris);
+  if ((tetris->piece.rotation == 0) && (tetris->piece.posx <= 6)) {
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx + 1] == EMP) &&
+        (tetris->field[tetris->piece.posy][tetris->piece.posx + 2] == EMP) &&
+        (tetris->field[tetris->piece.posy][tetris->piece.posx + 3] == EMP))
+      tetris->piece.rotation = 1;
+  } else if ((tetris->piece.rotation == 1) && (tetris->piece.posy >= 3))
+    if ((tetris->field[tetris->piece.posy - 1][tetris->piece.posx] == EMP) &&
+        (tetris->field[tetris->piece.posy - 2][tetris->piece.posx] == EMP) &&
+        (tetris->field[tetris->piece.posy - 3][tetris->piece.posx] == EMP))
+      tetris->piece.rotation = 0;
 }
 
-void LARotate() {
-  CleanLA();
-  if ((piece.rotation == 0) &&
-      (tetris.field[piece.posy][piece.posx + 1] == EMP)) {
-    piece.rotation = 1;
-  } else if ((piece.rotation == 1) && (piece.posx <= 7)) {
-    if ((tetris.field[piece.posy][piece.posx + 2] == EMP) &&
-        (tetris.field[piece.posy - 1][piece.posx + 2] == EMP))
-      piece.rotation = 2;
-  } else if ((piece.rotation == 2) &&
-             (tetris.field[piece.posy - 2][piece.posx] == EMP) &&
-             (tetris.field[piece.posy - 2][piece.posx + 1] == EMP)) {
-    piece.rotation = 3;
-  } else if ((piece.rotation == 3) && (piece.posx <= 7)) {
-    if ((tetris.field[piece.posy][piece.posx] == EMP) &&
-        (tetris.field[piece.posy - 1][piece.posx] == EMP) &&
-        (tetris.field[piece.posy - 1][piece.posx + 2] == EMP))
-      piece.rotation = 0;
+void LARotate(GameInfo_t *tetris) {
+  CleanLA(tetris);
+  if ((tetris->piece.rotation == 0) &&
+      (tetris->field[tetris->piece.posy][tetris->piece.posx + 1] == EMP)) {
+    tetris->piece.rotation = 1;
+  } else if ((tetris->piece.rotation == 1) && (tetris->piece.posx <= 7)) {
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx + 2] == EMP) &&
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] == EMP))
+      tetris->piece.rotation = 2;
+  } else if ((tetris->piece.rotation == 2) &&
+             (tetris->field[tetris->piece.posy - 2][tetris->piece.posx] ==
+              EMP) &&
+             (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] ==
+              EMP)) {
+    tetris->piece.rotation = 3;
+  } else if ((tetris->piece.rotation == 3) && (tetris->piece.posx <= 7)) {
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx] == EMP) &&
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx] == EMP) &&
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] == EMP))
+      tetris->piece.rotation = 0;
   }
 }
 
-void RARotate() {
-  CleanRA();
-  if ((piece.rotation == 0) && (tetris.field[piece.posy][piece.posx] == EMP)) {
-    piece.rotation = 1;
-  } else if ((piece.rotation == 1) && (piece.posx <= 7)) {
-    if ((tetris.field[piece.posy][piece.posx + 1] == EMP) &&
-        (tetris.field[piece.posy][piece.posx + 2] == EMP))
-      piece.rotation = 2;
-  } else if ((piece.rotation == 2) &&
-             (tetris.field[piece.posy - 2][piece.posx + 1] == EMP)) {
-    piece.rotation = 3;
-  } else if ((piece.rotation == 3) && (piece.posx <= 7)) {
-    if ((tetris.field[piece.posy][piece.posx + 2] == EMP) &&
-        (tetris.field[piece.posy - 1][piece.posx + 2] == EMP))
-      piece.rotation = 0;
+void RARotate(GameInfo_t *tetris) {
+  CleanRA(tetris);
+  if ((tetris->piece.rotation == 0) &&
+      (tetris->field[tetris->piece.posy][tetris->piece.posx] == EMP)) {
+    tetris->piece.rotation = 1;
+  } else if ((tetris->piece.rotation == 1) && (tetris->piece.posx <= 7)) {
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx + 1] == EMP) &&
+        (tetris->field[tetris->piece.posy][tetris->piece.posx + 2] == EMP))
+      tetris->piece.rotation = 2;
+  } else if ((tetris->piece.rotation == 2) &&
+             (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] ==
+              EMP)) {
+    tetris->piece.rotation = 3;
+  } else if ((tetris->piece.rotation == 3) && (tetris->piece.posx <= 7)) {
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx + 2] == EMP) &&
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] == EMP))
+      tetris->piece.rotation = 0;
   }
 }
 
-void LZRotate() {
-  CleanLZ();
-  if ((piece.rotation == 0) &&
-      (tetris.field[piece.posy - 2][piece.posx] == EMP)) {
-    piece.rotation = 1;
-  } else if ((piece.rotation == 1) && (piece.posx <= 7)) {
-    if ((tetris.field[piece.posy][piece.posx] == EMP) &&
-        (tetris.field[piece.posy - 1][piece.posx + 2] == EMP))
-      piece.rotation = 0;
+void LZRotate(GameInfo_t *tetris) {
+  CleanLZ(tetris);
+  if ((tetris->piece.rotation == 0) &&
+      (tetris->field[tetris->piece.posy - 2][tetris->piece.posx] == EMP)) {
+    tetris->piece.rotation = 1;
+  } else if ((tetris->piece.rotation == 1) && (tetris->piece.posx <= 7)) {
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx] == EMP) &&
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] == EMP))
+      tetris->piece.rotation = 0;
   }
 }
 
-void RZRotate() {
-  CleanRZ();
-  if ((piece.rotation == 0) && (tetris.field[piece.posy][piece.posx] == EMP)) {
-    piece.rotation = 1;
-  } else if ((piece.rotation == 1) && (piece.posx <= 7)) {
-    if ((tetris.field[piece.posy][piece.posx + 1] == EMP) &&
-        (tetris.field[piece.posy][piece.posx + 2] == EMP))
-      piece.rotation = 0;
+void RZRotate(GameInfo_t *tetris) {
+  CleanRZ(tetris);
+  if ((tetris->piece.rotation == 0) &&
+      (tetris->field[tetris->piece.posy][tetris->piece.posx] == EMP)) {
+    tetris->piece.rotation = 1;
+  } else if ((tetris->piece.rotation == 1) && (tetris->piece.posx <= 7)) {
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx + 1] == EMP) &&
+        (tetris->field[tetris->piece.posy][tetris->piece.posx + 2] == EMP))
+      tetris->piece.rotation = 0;
   }
 }
 
-void TRotate() {
-  CleanT();
-  if (piece.rotation == 0) {
-    piece.rotation = 1;
-  } else if ((piece.rotation == 1) && (piece.posx <= 7)) {
-    if ((tetris.field[piece.posy][piece.posx] == EMP) &&
-        (tetris.field[piece.posy][piece.posx + 2] == EMP))
-      piece.rotation = 2;
-  } else if ((piece.rotation == 2) &&
-             (tetris.field[piece.posy - 2][piece.posx] == EMP)) {
-    piece.rotation = 3;
-  } else if ((piece.rotation == 3) && (piece.posx <= 7)) {
-    if ((tetris.field[piece.posy][piece.posx + 1] == EMP) &&
-        (tetris.field[piece.posy - 1][piece.posx + 2] == EMP))
-      piece.rotation = 0;
+void TRotate(GameInfo_t *tetris) {
+  CleanT(tetris);
+  if (tetris->piece.rotation == 0) {
+    tetris->piece.rotation = 1;
+  } else if ((tetris->piece.rotation == 1) && (tetris->piece.posx <= 7)) {
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx] == EMP) &&
+        (tetris->field[tetris->piece.posy][tetris->piece.posx + 2] == EMP))
+      tetris->piece.rotation = 2;
+  } else if ((tetris->piece.rotation == 2) &&
+             (tetris->field[tetris->piece.posy - 2][tetris->piece.posx] ==
+              EMP)) {
+    tetris->piece.rotation = 3;
+  } else if ((tetris->piece.rotation == 3) && (tetris->piece.posx <= 7)) {
+    if ((tetris->field[tetris->piece.posy][tetris->piece.posx + 1] == EMP) &&
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] == EMP))
+      tetris->piece.rotation = 0;
   }
 }
 
-void CleanLine() {
-  if (piece.rotation == 0) {
-    tetris.field[piece.posy][piece.posx] = EMP;
-    tetris.field[piece.posy - 1][piece.posx] = EMP;
-    tetris.field[piece.posy - 2][piece.posx] = EMP;
-    tetris.field[piece.posy - 3][piece.posx] = EMP;
-  } else if (piece.rotation == 1) {
-    tetris.field[piece.posy][piece.posx] = EMP;
-    tetris.field[piece.posy][piece.posx + 1] = EMP;
-    tetris.field[piece.posy][piece.posx + 2] = EMP;
-    tetris.field[piece.posy][piece.posx + 3] = EMP;
+void CleanLine(GameInfo_t *tetris) {
+  if (tetris->piece.rotation == 0) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy - 3][tetris->piece.posx] = EMP;
+  } else if (tetris->piece.rotation == 1) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 2] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 3] = EMP;
   }
 }
 
-void CleanLA() {
-  if (piece.rotation == 0) {
-    tetris.field[piece.posy][piece.posx] = EMP;
-    tetris.field[piece.posy - 1][piece.posx] = EMP;
-    tetris.field[piece.posy - 1][piece.posx + 1] = EMP;
-    tetris.field[piece.posy - 1][piece.posx + 2] = EMP;
-  } else if (piece.rotation == 1) {
-    tetris.field[piece.posy][piece.posx + 1] = EMP;
-    tetris.field[piece.posy][piece.posx] = EMP;
-    tetris.field[piece.posy - 1][piece.posx] = EMP;
-    tetris.field[piece.posy - 2][piece.posx] = EMP;
-  } else if (piece.rotation == 2) {
-    tetris.field[piece.posy][piece.posx] = EMP;
-    tetris.field[piece.posy][piece.posx + 1] = EMP;
-    tetris.field[piece.posy][piece.posx + 2] = EMP;
-    tetris.field[piece.posy - 1][piece.posx + 2] = EMP;
-  } else if (piece.rotation == 3) {
-    tetris.field[piece.posy][piece.posx + 1] = EMP;
-    tetris.field[piece.posy - 1][piece.posx + 1] = EMP;
-    tetris.field[piece.posy - 2][piece.posx + 1] = EMP;
-    tetris.field[piece.posy - 2][piece.posx] = EMP;
+void CleanLA(GameInfo_t *tetris) {
+  if (tetris->piece.rotation == 0) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] = EMP;
+  } else if (tetris->piece.rotation == 1) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx] = EMP;
+  } else if (tetris->piece.rotation == 2) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 2] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] = EMP;
+  } else if (tetris->piece.rotation == 3) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx] = EMP;
   }
 }
 
-void CleanRA() {
-  if (piece.rotation == 0) {
-    tetris.field[piece.posy - 1][piece.posx] = EMP;
-    tetris.field[piece.posy - 1][piece.posx + 1] = EMP;
-    tetris.field[piece.posy - 1][piece.posx + 2] = EMP;
-    tetris.field[piece.posy][piece.posx + 2] = EMP;
-  } else if (piece.rotation == 1) {
-    tetris.field[piece.posy][piece.posx] = EMP;
-    tetris.field[piece.posy - 1][piece.posx] = EMP;
-    tetris.field[piece.posy - 2][piece.posx] = EMP;
-    tetris.field[piece.posy - 2][piece.posx + 1] = EMP;
-  } else if (piece.rotation == 2) {
-    tetris.field[piece.posy - 1][piece.posx] = EMP;
-    tetris.field[piece.posy][piece.posx] = EMP;
-    tetris.field[piece.posy][piece.posx + 1] = EMP;
-    tetris.field[piece.posy][piece.posx + 2] = EMP;
-  } else if (piece.rotation == 3) {
-    tetris.field[piece.posy][piece.posx] = EMP;
-    tetris.field[piece.posy][piece.posx + 1] = EMP;
-    tetris.field[piece.posy - 1][piece.posx + 1] = EMP;
-    tetris.field[piece.posy - 2][piece.posx + 1] = EMP;
+void CleanRA(GameInfo_t *tetris) {
+  if (tetris->piece.rotation == 0) {
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 2] = EMP;
+  } else if (tetris->piece.rotation == 1) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] = EMP;
+  } else if (tetris->piece.rotation == 2) {
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 2] = EMP;
+  } else if (tetris->piece.rotation == 3) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] = EMP;
   }
 }
 
-void CleanLZ() {
-  if (piece.rotation == 0) {
-    tetris.field[piece.posy][piece.posx] = EMP;
-    tetris.field[piece.posy][piece.posx + 1] = EMP;
-    tetris.field[piece.posy - 1][piece.posx + 1] = EMP;
-    tetris.field[piece.posy - 1][piece.posx + 2] = EMP;
-  } else if (piece.rotation == 1) {
-    tetris.field[piece.posy][piece.posx + 1] = EMP;
-    tetris.field[piece.posy - 1][piece.posx + 1] = EMP;
-    tetris.field[piece.posy - 1][piece.posx] = EMP;
-    tetris.field[piece.posy - 2][piece.posx] = EMP;
+void CleanLZ(GameInfo_t *tetris) {
+  if (tetris->piece.rotation == 0) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] = EMP;
+  } else if (tetris->piece.rotation == 1) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx] = EMP;
   }
 }
 
-void CleanRZ() {
-  if (piece.rotation == 0) {
-    tetris.field[piece.posy - 1][piece.posx] = EMP;
-    tetris.field[piece.posy - 1][piece.posx + 1] = EMP;
-    tetris.field[piece.posy][piece.posx + 1] = EMP;
-    tetris.field[piece.posy][piece.posx + 2] = EMP;
-  } else if (piece.rotation == 1) {
-    tetris.field[piece.posy][piece.posx] = EMP;
-    tetris.field[piece.posy - 1][piece.posx] = EMP;
-    tetris.field[piece.posy - 1][piece.posx + 1] = EMP;
-    tetris.field[piece.posy - 2][piece.posx + 1] = EMP;
+void CleanRZ(GameInfo_t *tetris) {
+  if (tetris->piece.rotation == 0) {
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 2] = EMP;
+  } else if (tetris->piece.rotation == 1) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] = EMP;
   }
 }
 
-void CleanT() {
-  tetris.field[piece.posy - 1][piece.posx + 1] = EMP;
-  if (piece.rotation == 0) {
-    tetris.field[piece.posy - 1][piece.posx] = EMP;
-    tetris.field[piece.posy][piece.posx + 1] = EMP;
-    tetris.field[piece.posy - 1][piece.posx + 2] = EMP;
-  } else if (piece.rotation == 1) {
-    tetris.field[piece.posy - 1][piece.posx] = EMP;
-    tetris.field[piece.posy][piece.posx + 1] = EMP;
-    tetris.field[piece.posy - 2][piece.posx + 1] = EMP;
-  } else if (piece.rotation == 2) {
-    tetris.field[piece.posy][piece.posx] = EMP;
-    tetris.field[piece.posy][piece.posx + 1] = EMP;
-    tetris.field[piece.posy][piece.posx + 2] = EMP;
-  } else if (piece.rotation == 3) {
-    tetris.field[piece.posy][piece.posx] = EMP;
-    tetris.field[piece.posy - 1][piece.posx] = EMP;
-    tetris.field[piece.posy - 2][piece.posx] = EMP;
+void CleanT(GameInfo_t *tetris) {
+  tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = EMP;
+  if (tetris->piece.rotation == 0) {
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] = EMP;
+  } else if (tetris->piece.rotation == 1) {
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] = EMP;
+  } else if (tetris->piece.rotation == 2) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = EMP;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 2] = EMP;
+  } else if (tetris->piece.rotation == 3) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = EMP;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx] = EMP;
   }
 }
 
-void CleanSquare() {
-  tetris.field[piece.posy][piece.posx] = EMP;
-  tetris.field[piece.posy - 1][piece.posx] = EMP;
-  tetris.field[piece.posy][piece.posx + 1] = EMP;
-  tetris.field[piece.posy - 1][piece.posx + 1] = EMP;
+void CleanSquare(GameInfo_t *tetris) {
+  tetris->field[tetris->piece.posy][tetris->piece.posx] = EMP;
+  tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = EMP;
+  tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = EMP;
+  tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = EMP;
 }
 
-void PutLine() {
-  if (piece.rotation == 0) {
-    tetris.field[piece.posy][piece.posx] = FIL;
-    tetris.field[piece.posy - 1][piece.posx] = FIL;
-    tetris.field[piece.posy - 2][piece.posx] = FIL;
-    tetris.field[piece.posy - 3][piece.posx] = FIL;
-  } else if (piece.rotation == 1) {
-    tetris.field[piece.posy][piece.posx] = FIL;
-    tetris.field[piece.posy][piece.posx + 1] = FIL;
-    tetris.field[piece.posy][piece.posx + 2] = FIL;
-    tetris.field[piece.posy][piece.posx + 3] = FIL;
+void PutLine(GameInfo_t *tetris) {
+  if (tetris->piece.rotation == 0) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy - 3][tetris->piece.posx] = FIL;
+  } else if (tetris->piece.rotation == 1) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 2] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 3] = FIL;
   }
 }
 
-void PutLA() {
-  if (piece.rotation == 0) {
-    tetris.field[piece.posy][piece.posx] = FIL;
-    tetris.field[piece.posy - 1][piece.posx] = FIL;
-    tetris.field[piece.posy - 1][piece.posx + 1] = FIL;
-    tetris.field[piece.posy - 1][piece.posx + 2] = FIL;
-  } else if (piece.rotation == 1) {
-    tetris.field[piece.posy][piece.posx + 1] = FIL;
-    tetris.field[piece.posy][piece.posx] = FIL;
-    tetris.field[piece.posy - 1][piece.posx] = FIL;
-    tetris.field[piece.posy - 2][piece.posx] = FIL;
-  } else if (piece.rotation == 2) {
-    tetris.field[piece.posy][piece.posx] = FIL;
-    tetris.field[piece.posy][piece.posx + 1] = FIL;
-    tetris.field[piece.posy][piece.posx + 2] = FIL;
-    tetris.field[piece.posy - 1][piece.posx + 2] = FIL;
-  } else if (piece.rotation == 3) {
-    tetris.field[piece.posy][piece.posx + 1] = FIL;
-    tetris.field[piece.posy - 1][piece.posx + 1] = FIL;
-    tetris.field[piece.posy - 2][piece.posx + 1] = FIL;
-    tetris.field[piece.posy - 2][piece.posx] = FIL;
+void PutLA(GameInfo_t *tetris) {
+  if (tetris->piece.rotation == 0) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] = FIL;
+  } else if (tetris->piece.rotation == 1) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx] = FIL;
+  } else if (tetris->piece.rotation == 2) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 2] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] = FIL;
+  } else if (tetris->piece.rotation == 3) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx] = FIL;
   }
 }
 
-void PutRA() {
-  if (piece.rotation == 0) {
-    tetris.field[piece.posy - 1][piece.posx] = FIL;
-    tetris.field[piece.posy - 1][piece.posx + 1] = FIL;
-    tetris.field[piece.posy - 1][piece.posx + 2] = FIL;
-    tetris.field[piece.posy][piece.posx + 2] = FIL;
-  } else if (piece.rotation == 1) {
-    tetris.field[piece.posy][piece.posx] = FIL;
-    tetris.field[piece.posy - 1][piece.posx] = FIL;
-    tetris.field[piece.posy - 2][piece.posx] = FIL;
-    tetris.field[piece.posy - 2][piece.posx + 1] = FIL;
-  } else if (piece.rotation == 2) {
-    tetris.field[piece.posy - 1][piece.posx] = FIL;
-    tetris.field[piece.posy][piece.posx] = FIL;
-    tetris.field[piece.posy][piece.posx + 1] = FIL;
-    tetris.field[piece.posy][piece.posx + 2] = FIL;
-  } else if (piece.rotation == 3) {
-    tetris.field[piece.posy][piece.posx] = FIL;
-    tetris.field[piece.posy][piece.posx + 1] = FIL;
-    tetris.field[piece.posy - 1][piece.posx + 1] = FIL;
-    tetris.field[piece.posy - 2][piece.posx + 1] = FIL;
+void PutRA(GameInfo_t *tetris) {
+  if (tetris->piece.rotation == 0) {
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 2] = FIL;
+  } else if (tetris->piece.rotation == 1) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] = FIL;
+  } else if (tetris->piece.rotation == 2) {
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 2] = FIL;
+  } else if (tetris->piece.rotation == 3) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] = FIL;
   }
 }
 
-void PutLZ() {
-  if (piece.rotation == 0) {
-    tetris.field[piece.posy][piece.posx] = FIL;
-    tetris.field[piece.posy][piece.posx + 1] = FIL;
-    tetris.field[piece.posy - 1][piece.posx + 1] = FIL;
-    tetris.field[piece.posy - 1][piece.posx + 2] = FIL;
-  } else if (piece.rotation == 1) {
-    tetris.field[piece.posy][piece.posx + 1] = FIL;
-    tetris.field[piece.posy - 1][piece.posx + 1] = FIL;
-    tetris.field[piece.posy - 1][piece.posx] = FIL;
-    tetris.field[piece.posy - 2][piece.posx] = FIL;
+void PutLZ(GameInfo_t *tetris) {
+  if (tetris->piece.rotation == 0) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] = FIL;
+  } else if (tetris->piece.rotation == 1) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx] = FIL;
   }
 }
 
-void PutRZ() {
-  if (piece.rotation == 0) {
-    tetris.field[piece.posy - 1][piece.posx] = FIL;
-    tetris.field[piece.posy - 1][piece.posx + 1] = FIL;
-    tetris.field[piece.posy][piece.posx + 1] = FIL;
-    tetris.field[piece.posy][piece.posx + 2] = FIL;
-  } else if (piece.rotation == 1) {
-    tetris.field[piece.posy][piece.posx] = FIL;
-    tetris.field[piece.posy - 1][piece.posx] = FIL;
-    tetris.field[piece.posy - 1][piece.posx + 1] = FIL;
-    tetris.field[piece.posy - 2][piece.posx + 1] = FIL;
+void PutRZ(GameInfo_t *tetris) {
+  if (tetris->piece.rotation == 0) {
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 2] = FIL;
+  } else if (tetris->piece.rotation == 1) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] = FIL;
   }
 }
 
-void PutT() {
-  tetris.field[piece.posy - 1][piece.posx + 1] = FIL;
-  if (piece.rotation == 0) {
-    tetris.field[piece.posy - 1][piece.posx] = FIL;
-    tetris.field[piece.posy][piece.posx + 1] = FIL;
-    tetris.field[piece.posy - 1][piece.posx + 2] = FIL;
-  } else if (piece.rotation == 1) {
-    tetris.field[piece.posy - 1][piece.posx] = FIL;
-    tetris.field[piece.posy][piece.posx + 1] = FIL;
-    tetris.field[piece.posy - 2][piece.posx + 1] = FIL;
-  } else if (piece.rotation == 2) {
-    tetris.field[piece.posy][piece.posx] = FIL;
-    tetris.field[piece.posy][piece.posx + 1] = FIL;
-    tetris.field[piece.posy][piece.posx + 2] = FIL;
-  } else if (piece.rotation == 3) {
-    tetris.field[piece.posy][piece.posx] = FIL;
-    tetris.field[piece.posy - 1][piece.posx] = FIL;
-    tetris.field[piece.posy - 2][piece.posx] = FIL;
+void PutT(GameInfo_t *tetris) {
+  tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = FIL;
+  if (tetris->piece.rotation == 0) {
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] = FIL;
+  } else if (tetris->piece.rotation == 1) {
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] = FIL;
+  } else if (tetris->piece.rotation == 2) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = FIL;
+    tetris->field[tetris->piece.posy][tetris->piece.posx + 2] = FIL;
+  } else if (tetris->piece.rotation == 3) {
+    tetris->field[tetris->piece.posy][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = FIL;
+    tetris->field[tetris->piece.posy - 2][tetris->piece.posx] = FIL;
   }
 }
 
-void PutSquare() {
-  tetris.field[piece.posy][piece.posx] = FIL;
-  tetris.field[piece.posy - 1][piece.posx] = FIL;
-  tetris.field[piece.posy][piece.posx + 1] = FIL;
-  tetris.field[piece.posy - 1][piece.posx + 1] = FIL;
+void PutSquare(GameInfo_t *tetris) {
+  tetris->field[tetris->piece.posy][tetris->piece.posx] = FIL;
+  tetris->field[tetris->piece.posy - 1][tetris->piece.posx] = FIL;
+  tetris->field[tetris->piece.posy][tetris->piece.posx + 1] = FIL;
+  tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] = FIL;
 }
 
-char LiConnect() {
+char LiConnect(GameInfo_t *tetris) {
   char result = 0;
-  if (((piece.rotation == 0) && (piece.posy == 3)) ||
-      ((piece.rotation == 1) && (piece.posy == 0)))
+  if (((tetris->piece.rotation == 0) && (tetris->piece.posy == 3)) ||
+      ((tetris->piece.rotation == 1) && (tetris->piece.posy == 0)))
     result = 1;
-  else if (piece.rotation == 1) {
-    if (((tetris.field[piece.posy - 1][piece.posx] == FIL)) ||
-        (tetris.field[piece.posy - 1][piece.posx + 1] == FIL) ||
-        (tetris.field[piece.posy - 1][piece.posx + 2] == FIL) ||
-        (tetris.field[piece.posy - 1][piece.posx + 3] == FIL))
+  else if (tetris->piece.rotation == 1) {
+    if (((tetris->field[tetris->piece.posy - 1][tetris->piece.posx] == FIL)) ||
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] ==
+         FIL) ||
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] ==
+         FIL) ||
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 3] == FIL))
       result = 1;
-  } else if ((piece.rotation == 0) &&
-             (tetris.field[piece.posy - 4][piece.posx] == FIL))
+  } else if ((tetris->piece.rotation == 0) &&
+             (tetris->field[tetris->piece.posy - 4][tetris->piece.posx] == FIL))
     result = 1;
   return result;
 }
 
-char LAConnect() {
+char LAConnect(GameInfo_t *tetris) {
   char result = 0;
-  if (((piece.rotation % 2 == 0) && (piece.posy == 1)) ||
-      ((piece.rotation % 2 == 1) && (piece.posy == 2)))
+  if (((tetris->piece.rotation % 2 == 0) && (tetris->piece.posy == 1)) ||
+      ((tetris->piece.rotation % 2 == 1) && (tetris->piece.posy == 2)))
     result = 1;
-  else if (piece.rotation == 0) {
-    if ((tetris.field[piece.posy - 2][piece.posx] == FIL) ||
-        (tetris.field[piece.posy - 2][piece.posx + 1] == FIL) ||
-        (tetris.field[piece.posy - 2][piece.posx + 2] == FIL))
+  else if (tetris->piece.rotation == 0) {
+    if ((tetris->field[tetris->piece.posy - 2][tetris->piece.posx] == FIL) ||
+        (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] ==
+         FIL) ||
+        (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 2] == FIL))
       result = 1;
-  } else if (piece.rotation == 1) {
-    if ((tetris.field[piece.posy - 3][piece.posx] == FIL) ||
-        (tetris.field[piece.posy - 1][piece.posx + 1] == FIL))
+  } else if (tetris->piece.rotation == 1) {
+    if ((tetris->field[tetris->piece.posy - 3][tetris->piece.posx] == FIL) ||
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] == FIL))
       result = 1;
-  } else if (piece.rotation == 2) {
-    if ((tetris.field[piece.posy - 1][piece.posx] == FIL) ||
-        (tetris.field[piece.posy - 1][piece.posx + 1] == FIL) ||
-        (tetris.field[piece.posy - 2][piece.posx + 2] == FIL))
+  } else if (tetris->piece.rotation == 2) {
+    if ((tetris->field[tetris->piece.posy - 1][tetris->piece.posx] == FIL) ||
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] ==
+         FIL) ||
+        (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 2] == FIL))
       result = 1;
-  } else if (piece.rotation == 3)
-    if ((tetris.field[piece.posy - 3][piece.posx] == FIL) ||
-        (tetris.field[piece.posy - 3][piece.posx + 1] == FIL))
+  } else if (tetris->piece.rotation == 3)
+    if ((tetris->field[tetris->piece.posy - 3][tetris->piece.posx] == FIL) ||
+        (tetris->field[tetris->piece.posy - 3][tetris->piece.posx + 1] == FIL))
       result = 1;
   return result;
 }
 
-char RAConnect() {
+char RAConnect(GameInfo_t *tetris) {
   char result = 0;
-  if (((piece.rotation % 2 == 0) && (piece.posy == 1)) ||
-      ((piece.rotation % 2 == 1) && (piece.posy == 2)))
+  if (((tetris->piece.rotation % 2 == 0) && (tetris->piece.posy == 1)) ||
+      ((tetris->piece.rotation % 2 == 1) && (tetris->piece.posy == 2)))
     result = 1;
-  else if (piece.rotation == 0) {
-    if ((tetris.field[piece.posy - 2][piece.posx] == FIL) ||
-        (tetris.field[piece.posy - 2][piece.posx + 1] == FIL) ||
-        (tetris.field[piece.posy - 2][piece.posx + 2] == FIL))
+  else if (tetris->piece.rotation == 0) {
+    if ((tetris->field[tetris->piece.posy - 2][tetris->piece.posx] == FIL) ||
+        (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] ==
+         FIL) ||
+        (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 2] == FIL))
       result = 1;
-  } else if (piece.rotation == 1) {
-    if ((tetris.field[piece.posy - 3][piece.posx] == FIL) ||
-        (tetris.field[piece.posy - 3][piece.posx + 1] == FIL))
+  } else if (tetris->piece.rotation == 1) {
+    if ((tetris->field[tetris->piece.posy - 3][tetris->piece.posx] == FIL) ||
+        (tetris->field[tetris->piece.posy - 3][tetris->piece.posx + 1] == FIL))
       result = 1;
-  } else if (piece.rotation == 2) {
-    if ((tetris.field[piece.posy - 2][piece.posx] == FIL) ||
-        (tetris.field[piece.posy - 1][piece.posx + 1] == FIL) ||
-        (tetris.field[piece.posy - 1][piece.posx + 2] == FIL))
+  } else if (tetris->piece.rotation == 2) {
+    if ((tetris->field[tetris->piece.posy - 2][tetris->piece.posx] == FIL) ||
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] ==
+         FIL) ||
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] == FIL))
       result = 1;
-  } else if (piece.rotation == 3)
-    if ((tetris.field[piece.posy - 1][piece.posx] == FIL) ||
-        (tetris.field[piece.posy - 3][piece.posx + 1] == FIL))
-      result = 1;
-
-  return result;
-}
-
-char LZConnect() {
-  char result = 0;
-  if (((piece.rotation == 0) && (piece.posy == 1)) ||
-      ((piece.rotation == 1) && (piece.posy == 2)))
-    result = 1;
-  else if (piece.rotation == 0) {
-    if ((tetris.field[piece.posy - 1][piece.posx] == FIL) ||
-        (tetris.field[piece.posy - 2][piece.posx + 1] == FIL) ||
-        (tetris.field[piece.posy - 2][piece.posx + 2] == FIL))
-      result = 1;
-  } else if (piece.rotation == 1)
-    if ((tetris.field[piece.posy - 3][piece.posx] == FIL) ||
-        (tetris.field[piece.posy - 2][piece.posx + 1] == FIL))
-      result = 1;
-
-  return result;
-}
-
-char RZConnect() {
-  char result = 0;
-  if (((piece.rotation == 0) && (piece.posy == 1)) ||
-      ((piece.rotation == 1) && (piece.posy == 2)))
-    result = 1;
-  else if (piece.rotation == 0) {
-    if ((tetris.field[piece.posy - 2][piece.posx] == FIL) ||
-        (tetris.field[piece.posy - 2][piece.posx + 1] == FIL) ||
-        (tetris.field[piece.posy - 1][piece.posx + 2] == FIL))
-      result = 1;
-  } else if (piece.rotation == 1)
-    if ((tetris.field[piece.posy - 2][piece.posx] == FIL) ||
-        (tetris.field[piece.posy - 3][piece.posx + 1] == FIL))
+  } else if (tetris->piece.rotation == 3)
+    if ((tetris->field[tetris->piece.posy - 1][tetris->piece.posx] == FIL) ||
+        (tetris->field[tetris->piece.posy - 3][tetris->piece.posx + 1] == FIL))
       result = 1;
 
   return result;
 }
 
-char SqConnect() {
+char LZConnect(GameInfo_t *tetris) {
   char result = 0;
-  if (piece.posy == 1)
+  if (((tetris->piece.rotation == 0) && (tetris->piece.posy == 1)) ||
+      ((tetris->piece.rotation == 1) && (tetris->piece.posy == 2)))
     result = 1;
-  else if ((tetris.field[piece.posy - 2][piece.posx] == FIL) ||
-           (tetris.field[piece.posy - 2][piece.posx + 1] == FIL))
-    result = 1;
-  return result;
-}
-
-char TConnect() {
-  char result = 0;
-  if (((piece.rotation % 2 == 0) && (piece.posy == 1)) ||
-      ((piece.rotation % 2 == 1) && (piece.posy == 2)))
-    result = 1;
-  else if (piece.rotation == 0) {
-    if ((tetris.field[piece.posy - 2][piece.posx] == FIL) ||
-        (tetris.field[piece.posy - 2][piece.posx + 1] == FIL) ||
-        (tetris.field[piece.posy - 2][piece.posx + 2] == FIL))
+  else if (tetris->piece.rotation == 0) {
+    if ((tetris->field[tetris->piece.posy - 1][tetris->piece.posx] == FIL) ||
+        (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] ==
+         FIL) ||
+        (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 2] == FIL))
       result = 1;
-  } else if (piece.rotation == 1) {
-    if ((tetris.field[piece.posy - 2][piece.posx] == FIL) ||
-        (tetris.field[piece.posy - 3][piece.posx + 1] == FIL))
-      result = 1;
-  } else if (piece.rotation == 2) {
-    if ((tetris.field[piece.posy - 1][piece.posx] == FIL) ||
-        (tetris.field[piece.posy - 2][piece.posx + 1] == FIL) ||
-        (tetris.field[piece.posy - 1][piece.posx + 2] == FIL))
-      result = 1;
-  } else if (piece.rotation == 3)
-    if ((tetris.field[piece.posy - 3][piece.posx] == FIL) ||
-        (tetris.field[piece.posy - 2][piece.posx + 1] == FIL))
+  } else if (tetris->piece.rotation == 1)
+    if ((tetris->field[tetris->piece.posy - 3][tetris->piece.posx] == FIL) ||
+        (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] == FIL))
       result = 1;
 
   return result;
 }
 
-char LiCheckEnd() {
+char RZConnect(GameInfo_t *tetris) {
   char result = 0;
-  if (((tetris.field[piece.posy][piece.posx] == FIL)) ||
-      (tetris.field[piece.posy - 1][piece.posx] == FIL) ||
-      (tetris.field[piece.posy - 2][piece.posx] == FIL) ||
-      (tetris.field[piece.posy - 3][piece.posx] == FIL))
+  if (((tetris->piece.rotation == 0) && (tetris->piece.posy == 1)) ||
+      ((tetris->piece.rotation == 1) && (tetris->piece.posy == 2)))
+    result = 1;
+  else if (tetris->piece.rotation == 0) {
+    if ((tetris->field[tetris->piece.posy - 2][tetris->piece.posx] == FIL) ||
+        (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] ==
+         FIL) ||
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] == FIL))
+      result = 1;
+  } else if (tetris->piece.rotation == 1)
+    if ((tetris->field[tetris->piece.posy - 2][tetris->piece.posx] == FIL) ||
+        (tetris->field[tetris->piece.posy - 3][tetris->piece.posx + 1] == FIL))
+      result = 1;
+
+  return result;
+}
+
+char SqConnect(GameInfo_t *tetris) {
+  char result = 0;
+  if (tetris->piece.posy == 1)
+    result = 1;
+  else if ((tetris->field[tetris->piece.posy - 2][tetris->piece.posx] == FIL) ||
+           (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] ==
+            FIL))
     result = 1;
   return result;
 }
 
-char LACheckEnd() {
+char TConnect(GameInfo_t *tetris) {
   char result = 0;
-  if ((tetris.field[piece.posy][piece.posx] == FIL) ||
-      (tetris.field[piece.posy - 1][piece.posx] == FIL) ||
-      (tetris.field[piece.posy - 1][piece.posx + 1] == FIL) ||
-      (tetris.field[piece.posy - 1][piece.posx + 2] == FIL))
+  if (((tetris->piece.rotation % 2 == 0) && (tetris->piece.posy == 1)) ||
+      ((tetris->piece.rotation % 2 == 1) && (tetris->piece.posy == 2)))
+    result = 1;
+  else if (tetris->piece.rotation == 0) {
+    if ((tetris->field[tetris->piece.posy - 2][tetris->piece.posx] == FIL) ||
+        (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] ==
+         FIL) ||
+        (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 2] == FIL))
+      result = 1;
+  } else if (tetris->piece.rotation == 1) {
+    if ((tetris->field[tetris->piece.posy - 2][tetris->piece.posx] == FIL) ||
+        (tetris->field[tetris->piece.posy - 3][tetris->piece.posx + 1] == FIL))
+      result = 1;
+  } else if (tetris->piece.rotation == 2) {
+    if ((tetris->field[tetris->piece.posy - 1][tetris->piece.posx] == FIL) ||
+        (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] ==
+         FIL) ||
+        (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] == FIL))
+      result = 1;
+  } else if (tetris->piece.rotation == 3)
+    if ((tetris->field[tetris->piece.posy - 3][tetris->piece.posx] == FIL) ||
+        (tetris->field[tetris->piece.posy - 2][tetris->piece.posx + 1] == FIL))
+      result = 1;
+
+  return result;
+}
+
+char LiCheckEnd(GameInfo_t *tetris) {
+  char result = 0;
+  if (((tetris->field[tetris->piece.posy][tetris->piece.posx] == FIL)) ||
+      (tetris->field[tetris->piece.posy - 1][tetris->piece.posx] == FIL) ||
+      (tetris->field[tetris->piece.posy - 2][tetris->piece.posx] == FIL) ||
+      (tetris->field[tetris->piece.posy - 3][tetris->piece.posx] == FIL))
     result = 1;
   return result;
 }
 
-char RACheckEnd() {
+char LACheckEnd(GameInfo_t *tetris) {
   char result = 0;
-  if ((tetris.field[piece.posy - 1][piece.posx] == FIL) ||
-      (tetris.field[piece.posy - 1][piece.posx + 1] == FIL) ||
-      (tetris.field[piece.posy - 1][piece.posx + 2] == FIL) ||
-      (tetris.field[piece.posy][piece.posx + 2] == FIL))
+  if ((tetris->field[tetris->piece.posy][tetris->piece.posx] == FIL) ||
+      (tetris->field[tetris->piece.posy - 1][tetris->piece.posx] == FIL) ||
+      (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] == FIL) ||
+      (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] == FIL))
     result = 1;
   return result;
 }
 
-char LZCheckEnd() {
+char RACheckEnd(GameInfo_t *tetris) {
   char result = 0;
-  if (((tetris.field[piece.posy][piece.posx] == FIL)) ||
-      (tetris.field[piece.posy][piece.posx + 1] == FIL) ||
-      (tetris.field[piece.posy - 1][piece.posx + 1] == FIL) ||
-      (tetris.field[piece.posy - 1][piece.posx + 2] == FIL))
+  if ((tetris->field[tetris->piece.posy - 1][tetris->piece.posx] == FIL) ||
+      (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] == FIL) ||
+      (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] == FIL) ||
+      (tetris->field[tetris->piece.posy][tetris->piece.posx + 2] == FIL))
     result = 1;
   return result;
 }
 
-char RZCheckEnd() {
+char LZCheckEnd(GameInfo_t *tetris) {
   char result = 0;
-  if (((tetris.field[piece.posy - 1][piece.posx] == FIL)) ||
-      (tetris.field[piece.posy - 1][piece.posx + 1] == FIL) ||
-      (tetris.field[piece.posy][piece.posx + 1] == FIL) ||
-      (tetris.field[piece.posy][piece.posx + 2] == FIL))
+  if (((tetris->field[tetris->piece.posy][tetris->piece.posx] == FIL)) ||
+      (tetris->field[tetris->piece.posy][tetris->piece.posx + 1] == FIL) ||
+      (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] == FIL) ||
+      (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] == FIL))
     result = 1;
   return result;
 }
 
-char SqCheckEnd() {
+char RZCheckEnd(GameInfo_t *tetris) {
   char result = 0;
-  if (((tetris.field[piece.posy][piece.posx] == FIL)) ||
-      (tetris.field[piece.posy][piece.posx + 1] == FIL) ||
-      (tetris.field[piece.posy - 1][piece.posx + 1] == FIL) ||
-      (tetris.field[piece.posy - 1][piece.posx] == FIL))
+  if (((tetris->field[tetris->piece.posy - 1][tetris->piece.posx] == FIL)) ||
+      (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] == FIL) ||
+      (tetris->field[tetris->piece.posy][tetris->piece.posx + 1] == FIL) ||
+      (tetris->field[tetris->piece.posy][tetris->piece.posx + 2] == FIL))
     result = 1;
   return result;
 }
 
-char TCheckEnd() {
+char SqCheckEnd(GameInfo_t *tetris) {
   char result = 0;
-  if (((tetris.field[piece.posy - 1][piece.posx] == FIL)) ||
-      (tetris.field[piece.posy][piece.posx + 1] == FIL) ||
-      (tetris.field[piece.posy - 1][piece.posx + 1] == FIL) ||
-      (tetris.field[piece.posy - 1][piece.posx + 2] == FIL))
+  if (((tetris->field[tetris->piece.posy][tetris->piece.posx] == FIL)) ||
+      (tetris->field[tetris->piece.posy][tetris->piece.posx + 1] == FIL) ||
+      (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] == FIL) ||
+      (tetris->field[tetris->piece.posy - 1][tetris->piece.posx] == FIL))
+    result = 1;
+  return result;
+}
+
+char TCheckEnd(GameInfo_t *tetris) {
+  char result = 0;
+  if (((tetris->field[tetris->piece.posy - 1][tetris->piece.posx] == FIL)) ||
+      (tetris->field[tetris->piece.posy][tetris->piece.posx + 1] == FIL) ||
+      (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 1] == FIL) ||
+      (tetris->field[tetris->piece.posy - 1][tetris->piece.posx + 2] == FIL))
     result = 1;
   return result;
 }
