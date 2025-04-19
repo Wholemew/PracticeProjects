@@ -1,7 +1,7 @@
 #ifndef TETRIS_GUI
 #define TETRIS_GUI
 
-#include "../../brick_game/tetris/library.h"
+#include "../Engine/library.h"
 
 // Draws starting screen
 void StartingScreen(GameInfo_t game);

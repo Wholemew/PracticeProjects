@@ -3,6 +3,6 @@
 
 #include <check.h>
 
-#include "../brick_game/tetris/library.h"
+#include "../Engine/library.h"
 
 #endif

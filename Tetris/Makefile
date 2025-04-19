@@ -1,8 +1,8 @@
 COMP = gcc
 
-SRC = tetris.c brick_game/tetris/library.c gui/cli/tetrisGUI.c
-HEAD = tetris.h brick_game/tetris/library.h gui/cli/tetrisGUI.h
-TEST = Tests/libTests.c brick_game/tetris/library.c -lcheck -lsubunit -lrt -lpthread -lm
+SRC = tetris.c Engine/library.c Gui/tetrisGUI.c
+HEAD = tetris.h Engine/library.h Gui/tetrisGUI.h
+TEST = Tests/libTests.c Engine/library.c -lcheck -lsubunit -lrt -lpthread -lm
 
 FLAGS = -Wall -Werror -Wextra -lncurses -g -fsanitize=address -fsanitize=leak -fsanitize=undefined
 
